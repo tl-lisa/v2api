@@ -1,0 +1,20 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+pylint = "*"
+v = {editable = true,version = "*"}
+pyline = "*"
+
+[packages]
+sshtunnel = "*"
+pymysql = "*"
+requests = "*"
+pycrypto = "*"
+paramiko = "*"
+
+[requires]
+python_version = "3.7"
