@@ -72,12 +72,14 @@ def createTestdata():
 @pytest.mark.parametrize("test_input, expected", createTestdata())
 def testGeLiveList(test_input, expected):
     zegoInfo = openZego()
-    print('room id = %d' %zegoInfo[1])
+    #print('room id = %d' %zegoInfo[1])
     chatlib.leave_room(zegoInfo[1], zegoInfo[0]) if test_input[2] else None
     header['X-Auth-Token'] = test_input[0]
     header['X-Auth-Nonce'] = test_input[1] 
     apiName = '/api/v2/backend/liveMaster/liveRoom/' + str(zegoInfo[1])
-    print(apiName)
+    #print(apiName)
     res = api.apiFunction(test_parameter['prefix'], header, apiName, 'delete', None)
+    #restext = json.loads(res.text)
     assert res.status_code // 100 == expected[0]
-    time.sleep(3)
+    #pprint(restext)
+    time.sleep(5)

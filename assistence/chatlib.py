@@ -122,5 +122,7 @@ def enterZego(sock, roomId):
         check1 = json.loads(check[1])
         if check1['event'] == 'ROOM_IN':
             print('Zego ROOM_NEW: %s'%check1)  
-            break        
+            break 
+        else:
+            print('check1=%s'%check1)       
     return check1['data']['roomId']

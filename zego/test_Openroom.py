@@ -52,6 +52,7 @@ def testGetOpenType(test_input, expected, isChangeRole):
     apiName = '/api/v2/liveMaster/zego/liveRoom'
     res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', {})
     restext = json.loads(res.text)
+    pprint(restext)
     assert res.status_code // 100 == expected[0]
     if expected[0] == 2:
         rid = sundry.Openroom(test_parameter['prefix'], header, 5, True, restext['data']['roomId'], 'Zegp開播', 5)
