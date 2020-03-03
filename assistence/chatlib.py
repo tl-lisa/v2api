@@ -9,7 +9,7 @@ def chat_room_auth(sock, header):
     auth = {'action': 'AUTH','data': {'token': '', 'nonce': ''}}
     auth['data']['token'] = header['X-Auth-Token']
     auth['data']['nonce'] = header['X-Auth-Nonce']
-    auth_json = json.dumps(auth) + '\r\n'
+    auth_json = json.dumps(auth) + '\n' #跳脫字元由'\r\n' 改為 '\n
     sock.send(auth_json.encode('utf-8'))
     check_event(sock)
     return
@@ -19,7 +19,7 @@ def join_room(rid, fpath, sock):
     flag = False
     room = {'action': 'IN_ROOM', 'data': {'roomId': 0}}
     room['data']['roomId'] = rid
-    room_json = json.dumps(room) + '\r\n'
+    room_json = json.dumps(room) + '\n'
     sock.send(room_json.encode('utf-8'))
     result_info = check_event(sock)
     if result_info[1].find('error') > 0:        
@@ -43,7 +43,7 @@ def leave_room(rid, sock):
     room = {'action': 'LEAVE_ROOM', 'data': {'roomId': 0}}
     room['data']['roomId'] = rid
     pprint(room)
-    room_json = json.dumps(room) + '\r\n'
+    room_json = json.dumps(room) + '\n'
     sock.send(room_json.encode('utf-8'))
     return
 
@@ -52,7 +52,7 @@ def send_message(strmsg, rid, sock):
     msg = {'action': 'MESSAGE', 'data': {'roomId': 0, 'content': ''}}
     msg['data']['roomId'] = rid
     msg['data']['content'] = strmsg
-    msg_json = json.dumps(msg) + '\r\n'
+    msg_json = json.dumps(msg) + '\n'
     sock.send(msg_json.encode('utf-8'))
     return
 
@@ -61,7 +61,7 @@ def send_gift(sock, gift_id, broadcastid):
     gift = {'action': 'GIFT', 'data': {'giftId': '', 'userId': '', 'count': 1}}
     gift['data']['giftId'] = gift_id
     gift['data']['userId'] = broadcastid
-    gift_json = json.dumps(gift) + '\r\n'
+    gift_json = json.dumps(gift) + '\n'
     sock.send(gift_json.encode('utf-8'))
     return
 
@@ -80,7 +80,7 @@ def check_event(sock):
 def keep_live(sock):
     result = 0
     keep = {'action': 'PING'}
-    keep_json = json.dumps(keep) + '\r\n'
+    keep_json = json.dumps(keep) + '\n'
     sock.send(keep_json.encode('utf-8'))
     receive_data = sock.recv(2048).decode('utf-8', errors='ignore')
     if receive_data.find('error') > 0:
@@ -92,37 +92,45 @@ def keep_live(sock):
 
 
 def new_room(sock, roomtitle):
+    strList = []
+    isContinue = True    
     new = {'action': 'NEW_ROOM', 'data': {'title': roomtitle}}
-    new_json = json.dumps(new) + '\r\n'
+    new_json = json.dumps(new) + '\n'
     sock.send(new_json.encode('utf-8'))
     sock.recv(2048).decode('utf-8', errors='ignore')     
-    rid = 0 
-    while 1:
+    while isContinue:
         check = check_event(sock)
-        check1 = json.loads(check[1])
-        if check1['event'] == 'RESPONSE':
-            print('中華 RESPONSE: %s'%check1)
-        elif check1['event'] == 'ROOM_NEW':
-            print('中華 ROOM_NEW: %s'%check1)
-            rid = check1['data']['roomId']
-        elif check1['event'] == 'ROOM_IN':
-            print('中華 ROOM_IN: %s'%check1)
-        if rid > 0:        
-            break
-    return rid
+        strList = check[1].split('\n')
+        #pprint(strList)
+        for i in strList:
+            if len(i)  > 0:
+                check1 = json.loads(i)
+                #pprint(check1)
+                if check1['event'] == 'ROOM_IN':
+                    pprint('ROOM_in: %s'%check1['data'])  
+                    roomId = check1['data']['roomId']
+                    isContinue = False 
+    return roomId
 
 
 def enterZego(sock, roomId):
+    strList = []
+    isContinue = True
     new = {'action': 'ENTER_ZEGO_ROOM', 'data': {'roomId': roomId}}
-    new_json = json.dumps(new) + '\r\n'
+    #new_json = json.dumps(new) + '\r\n'
+    new_json = json.dumps(new) + '\n'
     sock.send(new_json.encode('utf-8'))
     sock.recv(2048).decode('utf-8', errors='ignore')     
-    while 1:
+    while isContinue:
         check = check_event(sock)
-        check1 = json.loads(check[1])
-        if check1['event'] == 'ROOM_IN':
-            print('ROOM_in: %s'%check1)  
-            break 
-        else:
-            print('check1=%s'%check1)       
-    return check1['data']['roomId']
+        strList = check[1].split('\n')
+        #pprint(strList)
+        for i in strList:
+            if len(i)  > 0:
+                check1 = json.loads(i)
+                #pprint(check1)
+                if check1['event'] == 'ROOM_IN':
+                    pprint('ROOM_in: %s'%check1['data'])  
+                    roomId = check1['data']['roomId']
+                    isContinue = False 
+    return roomId

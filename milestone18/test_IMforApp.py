@@ -122,6 +122,12 @@ class TestgetRoomList():
         assert len(restext['data']) == len(self.dialogIdList)
     
 
+class TestBlack():
+    def testBlacklist(self):
+        #直播主將user加入黑名單後，直播主看不到該聊天室；但user可以看到
+        pass
+
+
 class TestcreateMessage():
     def updatePoint(self, point, id):
         sqlList = []
