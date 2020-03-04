@@ -1,3 +1,4 @@
+#milestone18 加入動態贈禮
 import time
 import json
 from ..assistence import api

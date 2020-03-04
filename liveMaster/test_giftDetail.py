@@ -1,9 +1,11 @@
+#milestone18 加入動態贈禮
 import time
 import json
 import datetime
 from ..assistence import api
 from ..assistence import initdata
 from ..assistence import dbConnect
+from ..assistence import photo
 from pprint import pprint
 from datetime import datetime, timedelta
 
@@ -46,24 +48,16 @@ class TestReceiveGiftDetail():
         sqlList.append("update remain_points set remain_points = 100 where identity_id = '" + self.idlist[2] + "'")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
 
-    def teardown_class(self):
-        pass
 
-    def preparePostGift(self):
-        sql = "select g.id, g.name, g.point from gift g  join gift_category gc on category_id = gc.id where where gc.type = 'post_gif'"
-        dbResult = dbConnect.dbQuery(test_parameter, sql)
-        self.giftId = dbResult[0][0]
-        self.giftName = dbResult[0][1]
-        self.giftPoint = dbResult[0][2]
-        header['X-Auth-Token'] = test_parameter['broadcaster_token']
-        header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']        
-        apiName = '/api/v2/liveMaster/photoPost'
-        body = {"photoPath": test_parameter['photo_url'], "content": "動態送禮。。測試中"}
-        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-        apiName = '/api/v2/liveMaster/' + idlist[0] + '/photoPost?item=5&page=1'
-        res = api.apiFunctio(test_parameter['prefix'], header, apiName, 'get', None)
-        restext = json.loads(res.text)
-        self.postId = restext['data'][0]['id']
+    def sendPostGift(self):
+        sqlStr = "select id, point from gift where category_id = 108 and status = 1"
+        result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+        giftId = result[0][0]
+        point = result[0][1]
+        photo.createPhoto(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], test_parameter['photo_url'], 3)
+        photoId = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], self.idlist[0])
+        photo.sendPhotoGift(test_parameter['user1_token'], test_parameter['user1_nonce'], test_parameter['prefix'], photoId[0], giftId)
+        return(point, giftId)
 
     def test_timeFormateIsMS(self):
         #資料格式不正確
@@ -214,18 +208,13 @@ class TestReceiveGiftDetail():
         assert restext['totalCount'] == 1
         assert restext['data'][0]['points'] == 20
         assert restext['data'][0]['user']['id'] == self.idlist[2]
-        assert restext['data'][0]['createAt'] == send_at
+        assert restext['data'][0]['createAt'] >= send_at
         assert restext['data'][0]['giftName'] == '20點傳送訊息'
 
     def testSendGiftToPhoto(self):
         #動態贈禮
-        preparePostGift
         send_at = int(time.time())
-        apiName = '/api/v2/identity/sendGift'
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        body = {'giftId': self.giftId, 'postId': self.postId}
-        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
+        result = self.sendPostGift()
         apiName = '/api/v2/liveMaster/{user id}/receiveGift/detail?item=10&page=1'
         header['X-Auth-Token'] = test_parameter['broadcaster_token']
         header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']         
@@ -236,7 +225,7 @@ class TestReceiveGiftDetail():
         assert int(res.status_code / 100) == 2
         assert len(restext['data']) == 1
         assert restext['totalCount'] == 1
-        assert restext['data'][0]['points'] == self.giftPoint
-        assert restext['data'][0]['user']['id'] == self.idlist[2]
+        assert restext['data'][0]['points'] == result[0]
+        assert restext['data'][0]['user']['id'] == self.idlist[3]
         assert restext['data'][0]['createAt'] == send_at
-        assert restext['data'][0]['giftName'] == self.giftName
+        assert restext['data'][0]['giftName'] == result[1]

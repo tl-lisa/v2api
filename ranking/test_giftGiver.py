@@ -1,3 +1,4 @@
+#milestone18 加入動態贈禮
 import json
 import requests
 import pymysql

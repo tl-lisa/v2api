@@ -1,9 +1,11 @@
+#milestone18 加入動態贈禮
 import time
 import json
 import datetime
 from ..assistence import api
 from ..assistence import initdata
 from ..assistence import dbConnect
+from ..assistence import photo
 from pprint import pprint
 from datetime import datetime, timedelta
 
@@ -27,10 +29,6 @@ def setup_module():
         userList.append(api.search_user(test_parameter['prefix'], userAccount, header))
     initdata.resetData(test_parameter['db'], idList[2])
     #pprint(userList)
-
-
-def teardown_module():
-    pass
 
 
 def sendGift(timeList, today, yesterday, thisWeek, thisMonth, lastMonth):
@@ -198,6 +196,27 @@ def sendMessage(original, repeats, timeList, today, yesterday, thisWeek, thisMon
         else:
             thisWeek[idList[0]] = 20
 
+def sendPostGift(timeList, today, yesterday, thisWeek, thisMonth, lastMonth):
+    sqlStr = "select id, point from gift where category_id = 108 and status = 1"
+    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+    giftId = result[0][0]
+    point = result[0][1]
+    photo.createPhoto(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], test_parameter['photo_url'], 3)
+    photoId = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idList[2])
+    photo.sendPhotoGift(test_parameter['user1_token'], test_parameter['user1_nonce'], test_parameter['prefix'], photoId[0], giftId)
+    if idList[1] in today:
+        today[idList[1]] += point
+    else:
+        today[idList[1]] = point
+    if idList[1] in thisMonth:
+        thisMonth[idList[1]] += point
+    else:
+        thisMonth[idList[1]] = point
+    if idList[1] in thisWeek:
+        thisWeek[idList[1]] += point
+    else:
+        thisWeek[idList[1]] = point
+
 class TestgetGiverList():
     today = {}
     yesterday = {}
@@ -223,6 +242,7 @@ class TestgetGiverList():
         sqlList.append("update remain_points set remain_points = 100 where identity_id = '" + idList[0] + "'")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
         sendMessage('newUsersToSendIM', 3, self.timeList, self.today, self.yesterday, self.thisWeek, self.thisMonth, self.lastMonth)  
+        sendPostGift(self.timeList, self.today, self.yesterday, self.thisWeek, self.thisMonth, self.lastMonth)
 
     def teardown_class(self):
         header['X-Auth-Token'] = test_parameter['broadcaster_token']
@@ -239,6 +259,9 @@ class TestgetGiverList():
         apiName = apiName.replace('{eTime}', str(int(datetime.timestamp(etime))))
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         restext = json.loads(res.text)
+        pprint(restext)
+        pprint(self.today)
+        print('user=%s'%idList[1])
         assert restext['totalCount'] == len(self.today)
         assert restext['sentCount'] == 0
         for i in restext['data']:

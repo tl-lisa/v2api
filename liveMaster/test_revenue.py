@@ -1,3 +1,4 @@
+#milestone18 加入動態贈禮
 import time
 import json
 import datetime
@@ -157,20 +158,20 @@ class TestRevenue():
         pass
     
     def preparePostGift(self):
-        sql = "select g.id, g.name, g.point from gift g  join gift_category gc on category_id = gc.id where where gc.type = 'post_gif'"
-        dbResult = dbConnect.dbQuery(test_parameter, sql)
-        self.giftId = dbResult[0][0]
-        self.giftName = dbResult[0][1]
-        self.giftPoint = dbResult[0][2]
-        header['X-Auth-Token'] = test_parameter['broadcaster_token']
-        header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']        
-        apiName = '/api/v2/liveMaster/photoPost'
-        body = {"photoPath": test_parameter['photo_url'], "content": "動態送禮。。測試中"}
-        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-        apiName = '/api/v2/liveMaster/' + idlist[0] + '/photoPost?item=5&page=1'
-        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
-        restext = json.loads(res.text)
-        self.postId = restext['data'][0]['id']
+    sql = "select g.id, g.name, g.point from gift g  join gift_category gc on category_id = gc.id where where gc.type = 'post_gif'"
+    dbResult = dbConnect.dbQuery(test_parameter, sql)
+    self.giftId = dbResult[0][0]
+    self.giftName = dbResult[0][1]
+    self.giftPoint = dbResult[0][2]
+    header['X-Auth-Token'] = test_parameter['broadcaster_token']
+    header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']        
+    apiName = '/api/v2/liveMaster/photoPost'
+    body = {"photoPath": test_parameter['photo_url'], "content": "動態送禮。。測試中"}
+    api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
+    apiName = '/api/v2/liveMaster/' + idlist[0] + '/photoPost?item=5&page=1'
+    res = api.apiFunctio(test_parameter['prefix'], header, apiName, 'get', None)
+    restext = json.loads(res.text)
+    self.postId = restext['data'][0]['id']
 
     def insertData(self, sqlList):
         #pprint(sqlList)
@@ -459,8 +460,8 @@ class TestRevenue():
 
     def testSendGiftToPhoto(self):
         #動態贈禮
-        self.preparePostGift
-        #send_at = int(time.time())
+        preparePostGift
+        send_at = int(time.time())
         apiName = '/api/v2/identity/sendGift'
         header['X-Auth-Token'] = test_parameter['user_token']
         header['X-Auth-Nonce'] = test_parameter['user_nonce']         
