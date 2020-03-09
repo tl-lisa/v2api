@@ -35,6 +35,7 @@ def sendPhotoGift(token, nonce, prefix, photoId, giftId):
     apiName = '/api/v2/identity/sendGift'
     body = {'giftId': giftId, 'postId': photoId}
     api.apiFunction(prefix, header, apiName, 'post', body)
+    #print(res.text)
 
 
 def likePhoto(token, nonce, prefix, photoId, likenum):

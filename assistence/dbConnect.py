@@ -71,7 +71,7 @@ def dbSetting(hostAddr, sqlStr):
         cursor = db.cursor()
         try:    
             for i in sqlStr:       
-                #print(i)          
+                print(i)          
                 cursor.execute(i)
             db.commit()            
         except Exception as err:

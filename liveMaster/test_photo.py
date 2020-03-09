@@ -29,6 +29,8 @@ def init():
     idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
     idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))
     initdata.resetData(test_parameter['db'], idlist[0])
+    sqlList = ["update gift_v2 set deleted_at = NULL, is_active = 1 where uuid = '234df236-8826-4938-8340-32f39df43ed1'"]
+    dbConnect.dbSetting(test_parameter['db'], sqlList)
     photo.createPhoto(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], test_parameter['photo_url'], 9)
 
 init()
@@ -90,12 +92,14 @@ def create_test_data(testName):
         ]
     elif testName == 'photogift':
         testData = [
-            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[0]], [4, 2, 'Mr.主人', 1000], False, False),
-            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [2, 2, 'Mr.主人', 1000], False, False),
-            ([test_parameter['user_token'], test_parameter['user_nonce'], photo_list[5]], [4, 2, 'Mr.主人', 2000], False, False),
-            ([test_parameter['err_token'], test_parameter['err_nonce'], photo_list[5]], [4, 2, 'Mr.主人', 2000], False, False),
-            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [2, 2, 'Mr.主人', 1000], True, False),
-            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [4, 2, 'Mr.主人', 1000], False, True)      
+            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], 999], [4, 2, 'Mr.主人', 1000], False, False, True, False),
+            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [2, 2, 'Mr.主人', 1000], False, False, False, False),
+            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [2, 2, 'Mr.主人', 1000], False, False, True, True),
+            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [2, 2, 'Mr.主人', 1000], False, False, True, False),
+            ([test_parameter['user_token'], test_parameter['user_nonce'], photo_list[5]], [4, 2, 'Mr.主人', 2000], False, False, True, False),
+            ([test_parameter['err_token'], test_parameter['err_nonce'], photo_list[5]], [4, 2, 'Mr.主人', 2000], False, False, True, False),
+            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [2, 2, 'Mr.主人', 1000], True, False, True, False),
+            ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], photo_list[5]], [4, 2, 'Mr.主人', 1000], False, True, True, False)      
         ]
     elif testName == 'likephoto':
         testData = [
@@ -106,6 +110,8 @@ def create_test_data(testName):
         ]
     return testData
 
+
+#@pytest.mark.skip()
 class TestAddPhoto():
     #新增動態是以token/nonce來判斷
     @pytest.mark.parametrize("test_input, expected", create_test_data('addphoto'))
@@ -123,7 +129,7 @@ class TestAddPhoto():
         res = api.add_photopost(test_parameter['prefix'], header, bodyValue)    
         assert res.status_code // 100 == expected
 
-
+#@pytest.mark.skip()
 class TestDeletePhoto():
     # 此功能是用token/nonce來做判斷
     photo_list = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idlist[0])
@@ -154,7 +160,7 @@ class TestDeletePhoto():
             res = api.operator_photopost(test_parameter['prefix'], header, 'get', str(self.delete_list[i]), '')
             assert res.status_code // 100 == 4
     
-
+#@pytest.mark.skip()
 class TestGetPhotolist():
     #此功能是任何人皆可呼叫，以livemasterid做條件 
     def teardown_module(self):
@@ -203,7 +209,7 @@ class TestGetPhotolist():
         res = api.get_photo_list(test_parameter['prefix'], header, idlist[0], '10', '1')
         assert res.status_code // 100 == 4
 
-
+#@pytest.mark.skip()
 class TestGetSpecificalPhoto():
     @pytest.mark.parametrize("test_input, expected", create_test_data('singlephoto'))
     def testGetSpecificalPhoto(self, test_input, expected):
@@ -218,7 +224,7 @@ class TestGetSpecificalPhoto():
             assert restext['data']['owner']['id'] == idlist[0]
             assert restext['data']['giftPoints'] == 0
 
-
+#@pytest.mark.skip()
 class TestUpdateContent():
     @pytest.mark.parametrize("test_input, body, expected", create_test_data('update'))
     def testUpdatCeontent(self, test_input, body, expected):
@@ -227,7 +233,7 @@ class TestUpdateContent():
         res = api.operator_photopost(test_parameter['prefix'], header, 'put', test_input[2], body)
         assert res.status_code // 100 == expected
 
-
+#@pytest.mark.skip()
 class TestPhotoLike():
     pid = ''
     changelist = [idlist[0]] 
@@ -263,29 +269,41 @@ class TestPhotoLike():
                 assert restext['data']['liked'] == True
                 assert restext['data']['likes'] == likeNum + test_input[3]
 
-            
+##@pytest.mark.skip()           
 class TestGetPhotoGiftlist():
     photo_list = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idlist[0])
     giftId = '234df236-8826-4938-8340-32f39df43ed1'
     def setup_class(self):
         sqlList = []
         authList = [test_parameter['user_token'], test_parameter['user_nonce'],test_parameter['user1_token'], test_parameter['user1_nonce'],]
-        sqlList.append("update remain_points set remain_points = 10000 where identity_id in( '" + idlist[2] + "', '" + idlist[3] + "')")
+        sqlList.append("update remain_points set remain_points = 15000 where identity_id in( '" + idlist[2] + "', '" + idlist[3] + "')")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
         for i in range(2):
             if i == 0:
-                photo.sendPhotoGift(authList[i * 2], authList[i * 2 + 1], test_parameter['prefix'], self.photo_list[0], self.giftId)
-            photo.sendPhotoGift(authList[i * 2], authList[i * 2 + 1], test_parameter['prefix'], self.photo_list[5], self.giftId)
+                photo.sendPhotoGift(authList[i * 2], authList[i * 2 + 1], test_parameter['prefix'], self.photo_list[0], 100)
+            photo.sendPhotoGift(authList[i * 2], authList[i * 2 + 1], test_parameter['prefix'], self.photo_list[5], 100)
             time.sleep(1)
+    
+    @pytest.fixture(scope="function")
+    def initDB(self):
+        print('initDB')
+        sqlList = ["update gift_v2 set is_active = 1, deleted_at is NULL"]
+        dbConnect.dbSetting(test_parameter['db'], sqlList)
 
-    @pytest.mark.parametrize("test_input, expected, isBlack, isChangeRole", create_test_data('photogift'))
-    def testgetgiftlist(self, test_input, expected, isBlack, isChangeRole):
+    @pytest.mark.parametrize("test_input, expected, isBlack, isChangeRole, isActive, isDelete", create_test_data('photogift'))
+    def testgetgiftlist(self, test_input, expected, isBlack, isChangeRole, isActive, isDelete):
         if isChangeRole:
             changelist = [idlist[0]] 
             header['X-Auth-Token'] = test_parameter['backend_token']
             header['X-Auth-Nonce'] = test_parameter['backend_nonce']   
             api.change_roles(test_parameter['prefix'], header, changelist, '5') #轉成一般用戶
             time.sleep(30)
+        if not isActive:
+            sqlList = ["update gift_v2 set is_active = 0 where uuid = '" + self.giftId + "'"]
+            dbConnect.dbSetting(test_parameter['db'], sqlList)
+        elif isDelete:
+            sqlList = ["update gift_v2 set deleted_at = '" + (datetime.today() - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') + "' where uuid = '" + self.giftId + "'"]
+            dbConnect.dbSetting(test_parameter['db'], sqlList)
         apiName = '/api/v2/liveMaster/photoPost/' + str(test_input[2]) + '/giftList?item=20&page=1'
         header['X-Auth-Token'] = test_input[0]
         header['X-Auth-Nonce'] = test_input[1]
@@ -294,7 +312,7 @@ class TestGetPhotoGiftlist():
             api.add_block_user(test_parameter['prefix'], header, body)
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         restext = json.loads(res.text)
-        #pprint(restext)
+        pprint(restext)
         assert res.status_code // 100 == expected[0]
         if expected[0] == 2:
             assert restext['totalCount'] == expected[1]

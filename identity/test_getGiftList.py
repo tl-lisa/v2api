@@ -1,4 +1,5 @@
 #/api/v2/identity/gift/list?giftCategoryId=
+#mileston 18 加入軟刪及判斷delete_at,並且使用V2 table
 import json
 import requests
 import pymysql
@@ -9,6 +10,7 @@ from ..assistence import api
 from ..assistence import initdata
 from ..assistence import dbConnect
 from pprint import pprint
+from datetime import datetime, timedelta
 
 env = 'testing'
 test_parameter = {}
@@ -19,32 +21,48 @@ initdata.set_test_data(env, test_parameter)
 
 class TestGetGiftCategory():
     gctype = ['live_room', 'liveshow', 'post_gift', 'instant_message']
-    def setup_class(self):
-        sqlList = ["update gift set status = 0 where category_id = post_gift"]
+    @pytest.fixture(scope='function')
+    def initDB(self):
+        sqlList = ["update gift_v2 set is_active = 1, delete_at is NULL"]
+        sqlList.append("update gift_category_v2 set start_time = NULL, end_time = NULL, is_active = 1, delete_at is NULL")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
     
-    @pytest.mark.parametrize("test_input, expected", [
-        ([test_parameter['backend_token'], test_parameter['backend_nonce'], 1], 2),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], 2], 2),
-        ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], 3], 2),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 2), 
-        ([test_parameter['err_token'], test_parameter['err_nonce'], 1], 4)
+    def setCondition(self, categoryId, isActive, isDelete, isDelOfCategory, isExpiredOfCategory):
+        if not isActive:
+            sqlList = ["update gift_v2 set is_active = 0 where category_id = " + str(categoryId)]
+        elif isDelete:
+            sqlList = ["update gift_v2 set delete_at = '" + (datetime.today() - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') + "' where category_id = " + str(categoryId)]
+        elif isDelOfCategory:
+            sqlList = ["update gift_category_v2 set delete_at = '" + (datetime.today() - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') + "' where category_id = " + str(categoryId)]
+        elif isExpiredOfCategory:
+            sqlList = ["update gift_category_v2 set end_time = '" + (datetime.today() - timedelta(hours=9)).strftime('%Y-%m-%d %H:%M:%S') + "' where category_id = " + str(categoryId)]
+        dbConnect.dbSetting(test_parameter['db'], sqlList)
+
+    @pytest.mark.parametrize("test_input, categoryId, isActive, isDelete, isDelOfCategory, isExpiredOfCategory, expected", [
+        ([test_parameter['backend_token'], test_parameter['backend_nonce'], 3], 64, True, False, False, False, 2),
+        ([test_parameter['user_token'], test_parameter['user_nonce'], 3], 76, False, False, False, False,2),
+        ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], 3], 92, True, True, False, False,2),
+        ([test_parameter['user_token'], test_parameter['user_nonce'], 3], 76, True, False, True, False,2), 
+        ([test_parameter['backend_token'], test_parameter['backend_nonce'], 3], 64, True, False, False, True, 2),
+        ([test_parameter['err_token'], test_parameter['err_nonce'], 3], 92, True, False, False, True, 4)
     ])
-    def testAuthAndType(self, test_input, expected):
+    def testAuthAndType(self, test_input, categoryId, isActive, isDelete, isDelOfCategory, isExpiredOfCategory, expected):
         #驗證權限及查詢類別
-        now = int(time.time()) * 1000
+        TimeCondition1 = (datetime.today() - timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
+        TimeCondition2 = (datetime.today() + timedelta(minutes=1)).strftime('%Y-%m-%d %H:%M:%S')
         apiName = '/api/v2/identity/gift/list?giftCategoryId=' + str(test_input[2]) + '&item=20&page=1'
         header['X-Auth-Token'] = test_input[0]
         header['X-Auth-Nonce'] = test_input[1]
+        time.sleep(30)
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)    
         assert res.status_code // 100 == expected
         if expected == 2:
             restext = json.loads(res.text)
             if  test_input[2] < 4:
-                sql = "select g.id, g.category_name, g.point, g.thumb_url, g.url, g.multiple, order_seq from gift g "
-                sql += "where g.category_id in (select id from gift_category where type = '" + self.gctype[test_input[2] - 1] + "' and  status = 1 and "
-                sql += "((start_time <= " + str(now) + " or start_time is null) and (end_time >= " + str(now) + " or end_time is null)) "
-                sql += "and status = 1 order by g.point"
+                sql = "select g.id, g.category_name, g.point, g.thumb_url, g.url, g.multiple, order_seq from gift_v2 g "
+                sql += "where g.category_id in (select id from gift_category_v2 where type = '" + self.gctype[test_input[2] - 1] + "' and  delete_at is Null and "
+                sql += "((start_time <= '" + TimeCondition1 + "' or start_time is null) and (end_time >= '" + TimeCondition2 + "' or end_time is null)) "
+                sql += "and is_active = 1 and delete_at is Null order by g.point"
                 dbResult = dbConnect.dbQuery(test_parameter['db'], sql)
                 assert restext['totalCount'] == len(dbResult)
                 self.totalCount = restext['totalCount'] if test_input[2] == 1 else None
@@ -61,17 +79,3 @@ class TestGetGiftCategory():
                         assert restext[i]['order_seq'] == dbResult[i][6]
             else:
                  assert restext['totalCount'] == 0
-
-    def testStatus(self):
-        #禮物以status做判斷；需加判cache 時間60秒
-        sqlList = ["update gift set status = 0 where category_id = post_gift"]
-        dbConnect.dbSetting(test_parameter['db'], sqlList)
-        time.sleep(60)
-        apiName = '/api/v2/identity/gift/list?giftCategoryId=3&item=20&page=1'
-        header['X-Auth-Token'] = test_parameter['backend_token']
-        header['X-Auth-Nonce'] = test_parameter['backend_nonce']
-        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)  
-        restext = json.loads(res.text)  
-        assert res.status_code // 100 == 2
-        assert restext['totalCount'] == 0
-

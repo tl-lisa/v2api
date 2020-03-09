@@ -158,8 +158,8 @@ class TestRevenue():
         pass
     
     def preparePostGift(self):
-    sql = "select g.id, g.name, g.point from gift g  join gift_category gc on category_id = gc.id where where gc.type = 'post_gif'"
-    dbResult = dbConnect.dbQuery(test_parameter, sql)
+    sqlStr = "select g.id, g.name, g.point from gift g join gift_category gc on category_id = gc.id where where gc.type = " + 'post_gif'"
+    dbResult = dbConnect.dbQuery(test_parameter, sqlStr)
     self.giftId = dbResult[0][0]
     self.giftName = dbResult[0][1]
     self.giftPoint = dbResult[0][2]
@@ -460,7 +460,7 @@ class TestRevenue():
 
     def testSendGiftToPhoto(self):
         #動態贈禮
-        preparePostGift
+        preparePostGift()
         send_at = int(time.time())
         apiName = '/api/v2/identity/sendGift'
         header['X-Auth-Token'] = test_parameter['user_token']

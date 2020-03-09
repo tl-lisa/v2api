@@ -26,25 +26,25 @@ class TestGetGiftCategory():
         if startTime == 'Null':
             startTimeStr = 'start_time = NULL'
         elif startTime == 'small':
-            startTimeStr = "start_time = '" + (datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d  %H:%M:%S') + "'"
+            startTimeStr = "start_time = '" + (datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S') + "'"
         elif startTime == 'bigger':
-            startTimeStr = "start_time = '" + (datetime.today() + timedelta(days=2)).strftime('%Y-%m-%d  %H:%M:%S') + "'"
+            startTimeStr = "start_time = '" + (datetime.today() + timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S') + "'"
 
         if endTime == 'Null':
             endTimeStr = 'end_time = NULL'
         elif endTime == 'small':
-            endTimeStr = "end_time = " + (datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d  %H:%M:%S') + "'"
+            endTimeStr = "end_time = '" + (datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S') + "'"
         elif endTime == 'bigger':
-            endTimeStr = "end_time = " + (datetime.today() + timedelta(days=2)).strftime('%Y-%m-%d  %H:%M:%S') + "'"
+            endTimeStr = "end_time = '" + (datetime.today() + timedelta(days=2)).strftime('%Y-%m-%d %H:%M:%S') + "'"
 
-        sqlStr = "update gift_category_v2 set " + startTimeStr + " , " +  endTimeStr
+        sqlStr = "update gift_category_v2 set " + startTimeStr + ", " +  endTimeStr
         if isDelete:
-            sqlStr += ", delelet_at = '" + (datetime.today() - timedelta(days=3)).strftime('%Y-%m-%d  %H:%M:%S') + "'"
+            sqlStr += ", delelet_at = '" + (datetime.today() - timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S') + "'"
         print(sqlStr)
         sqlList.append(sqlStr)
         dbConnect.dbSetting(test_parameter['db'], sqlList)
 
-    @pytest.mark.parametrize("test_input, expected",[ 
+    @pytest.mark.parametrize("test_input, startTime, endTime, isDelete, expected",[ 
         ([test_parameter['backend_token'], test_parameter['backend_nonce'], 1], 'Null', 'Null', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 2], 'Null', 'equal', False, 2),
         ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], 3], 'Null', 'small', False, 2),
@@ -55,7 +55,7 @@ class TestGetGiftCategory():
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'bigger', 'bigger', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'small', 'bigger', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'small', 'bigger', False, 2),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], 5], 'small', 'bigger', False, 4),
+        ([test_parameter['user_token'], test_parameter['user_nonce'], 5], 'small', 'bigger', False, 5), #送exception到sentry.
         ([test_parameter['err_token'], test_parameter['err_nonce'], 1], 'small', 'bigger', False,4)
     ])
     def testAuthAndType(self, test_input, startTime, endTime, isDelete, expected):
@@ -72,7 +72,7 @@ class TestGetGiftCategory():
         assert res.status_code // 100 == expected
         if expected == 2:
             if  test_input[2] < 5:
-                sql = "select id, category_name, banner, url from gift_category_v2 where type = '" + self.gctype[test_input[2] - 1] + "' and  deleted_at is null and "
+                sql = "select id, name, banner, url from gift_category_v2 where type = '" + self.gctype[test_input[2] - 1] + "' and  deleted_at is null and "
                 sql += "((start_time <= '" + TimeCondition1 + "' or start_time is null) and (end_time >= '" + TimeCondition2 + "' or end_time is null)) order by id desc"
                 dbResult = dbConnect.dbQuery(test_parameter['db'], sql)
                 #pprint(dbResult)
