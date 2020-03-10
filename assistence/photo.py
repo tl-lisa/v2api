@@ -34,8 +34,8 @@ def sendPhotoGift(token, nonce, prefix, photoId, giftId):
     header['X-Auth-Nonce'] = nonce
     apiName = '/api/v2/identity/sendGift'
     body = {'giftId': giftId, 'postId': photoId}
-    api.apiFunction(prefix, header, apiName, 'post', body)
-    #print(res.text)
+    res = api.apiFunction(prefix, header, apiName, 'post', body)
+    print(json.loads(res.text))
 
 
 def likePhoto(token, nonce, prefix, photoId, likenum):

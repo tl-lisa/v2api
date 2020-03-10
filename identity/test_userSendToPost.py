@@ -35,8 +35,8 @@ def init():
 init()
 
 def f():
-    giftId = '234df236-8826-4938-8340-32f39df43ed1'
-    giftId1 = 'e5741caa-2924-4e22-a955-02a4f50f382d'
+    giftId = 100  #'234df236-8826-4938-8340-32f39df43ed1'; category=108(post_gift)
+    giftId1 = 64  #'e5741caa-2924-4e22-a955-02a4f50f382d'; category=65(非post_gift)
     testData = []
     photoId = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idlist[0])
     testData = [([test_parameter['user_token'], test_parameter['user_nonce'], 10000, giftId, photoId[0]], 2),
@@ -50,8 +50,7 @@ def f():
 
 
 class TestSendGiftToPhoto():
-    giftId = '234df236-8826-4938-8340-32f39df43ed1'
-    giftId1 = 'e5741caa-2924-4e22-a955-02a4f50f382d'
+    giftUUID = '234df236-8826-4938-8340-32f39df43ed1' 
     photo.createPhoto(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], test_parameter['photo_url'], 3)
     photoId = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idlist[0])
 

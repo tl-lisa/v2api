@@ -85,7 +85,7 @@ def resetData(dbenv, live_master_id):
     for i in (truncateList):
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)
-    deleteList = [ 'instant_message', 'dialog_member', 'dialog', 'quota_log', 'photo_post', 'point_consumption_history', 'live_room']
+    deleteList = ['instant_message', 'dialog_member', 'dialog', 'quota_log', 'photo_post', 'point_consumption_history', 'liveshow_team', 'live_room', 'liveshow']
     for tableName in deleteList:
         sqlStr = 'delete from ' + tableName
         sqlList.append(sqlStr)       

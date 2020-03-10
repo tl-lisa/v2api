@@ -21,8 +21,16 @@ initdata.set_test_data(env, test_parameter)
 class TestGetGiftCategory():
     gctype = ['live_room', 'liveshow', 'post_gift', 'instant_message']
 
+    @pytest.fixture(scope='class')
+    def initDB(self):
+        sqlList = ["update gift_category_v2 set start_time = NULL, end_time = NULL, is_active = 1, delete_at is NULL"]
+        dbConnect.dbSetting(test_parameter['db'], sqlList)
+
     def setData(self, startTime, endTime, isDelete):
         sqlList = []
+        startTimeStr = ''
+        endTimeStr = ''
+
         if startTime == 'Null':
             startTimeStr = 'start_time = NULL'
         elif startTime == 'small':
@@ -40,13 +48,12 @@ class TestGetGiftCategory():
         sqlStr = "update gift_category_v2 set " + startTimeStr + ", " +  endTimeStr
         if isDelete:
             sqlStr += ", delelet_at = '" + (datetime.today() - timedelta(days=3)).strftime('%Y-%m-%d %H:%M:%S') + "'"
-        print(sqlStr)
+        #print(sqlStr)
         sqlList.append(sqlStr)
         dbConnect.dbSetting(test_parameter['db'], sqlList)
 
     @pytest.mark.parametrize("test_input, startTime, endTime, isDelete, expected",[ 
         ([test_parameter['backend_token'], test_parameter['backend_nonce'], 1], 'Null', 'Null', False, 2),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], 2], 'Null', 'equal', False, 2),
         ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], 3], 'Null', 'small', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'Null', 'bigger', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'small', 'Null', False, 2),
@@ -54,31 +61,33 @@ class TestGetGiftCategory():
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'small', 'small', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'bigger', 'bigger', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'small', 'bigger', False, 2),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'small', 'bigger', False, 2),
+        ([test_parameter['user_token'], test_parameter['user_nonce'], 4], 'bigger', 'small', False, 2),
         ([test_parameter['user_token'], test_parameter['user_nonce'], 5], 'small', 'bigger', False, 5), #送exception到sentry.
         ([test_parameter['err_token'], test_parameter['err_nonce'], 1], 'small', 'bigger', False,4)
     ])
-    def testAuthAndType(self, test_input, startTime, endTime, isDelete, expected):
+    def testGetCategory(self, test_input, startTime, endTime, isDelete, expected):
         TimeCondition1 = (datetime.today() - timedelta(minutes=1)).strftime('%Y-%m-%d  %H:%M:%S')
         TimeCondition2 = (datetime.today() + timedelta(minutes=1)).strftime('%Y-%m-%d  %H:%M:%S')
         #驗證權限及查詢類別
         self.setData(startTime, endTime, isDelete)
-        apiName = '/api/v2/identity/giftCategory/list?type=' + str(test_input[2]) + '&item=20&page=1'
+        apiName = '/api/v2/identity/giftCategory/list?type=' + str(test_input[2]) + '&item=30&page=1'
         header['X-Auth-Token'] = test_input[0]
         header['X-Auth-Nonce'] = test_input[1]
+        time.sleep(60)
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)  
         restext = json.loads(res.text)
-        pprint(restext)  
+        #pprint(restext)  
         assert res.status_code // 100 == expected
         if expected == 2:
             if  test_input[2] < 5:
-                sql = "select id, name, banner, url from gift_category_v2 where type = '" + self.gctype[test_input[2] - 1] + "' and  deleted_at is null and "
+                sql = "select id, name, banner, url, start_time, end_time from gift_category_v2 where type = '" + self.gctype[test_input[2] - 1] + "' and  deleted_at is null and "
                 sql += "((start_time <= '" + TimeCondition1 + "' or start_time is null) and (end_time >= '" + TimeCondition2 + "' or end_time is null)) order by id desc"
                 dbResult = dbConnect.dbQuery(test_parameter['db'], sql)
                 #pprint(dbResult)
                 assert restext['totalCount'] == len(dbResult)
                 if restext['totalCount'] > 0:
-                    for i in range(restext['totalCount']):
+                    for i in range(len(dbResult)):
+                        #print('i = %d; data id = %d; db id = %d'%(i, restext['data'][i]['id'], dbResult[i][0]))
                         assert restext['data'][i]['id'] == dbResult[i][0]
                         assert restext['data'][i]['type'] == test_input[2]
                         assert restext['data'][i]['categoryName'] == dbResult[i][1]

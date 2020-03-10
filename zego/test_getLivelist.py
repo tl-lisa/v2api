@@ -107,11 +107,14 @@ def testGeLiveList(test_input, expected):
     restext = json.loads(res.text)
     assert res.status_code // 100 == expected[0]
     if expected == 2:
+        assert restext['data'][0].has_key('tags') == True
+        assert restext['data'][0].has_key('videoUrl') == True
+        assert restext['data'][0].has_key('description') == True
         if test_input[3] > 1:
             if test_input[5] != 'zego':
                 assert restext['totalCount'] == expected[1]
                 assert restext['data'][0]['liveMasterId'] == idlist[0]
-                assert restext['data'][1]['liveMasterId'] == idlist[1]
+                assert restext['data'][1]['liveMasterId'] == idlist[1] 
             else:
                 assert restext['totalCount'] == expected[1]
                 assert restext['data'][0]['liveMasterId'] == idlist[1]

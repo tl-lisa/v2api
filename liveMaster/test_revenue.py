@@ -17,6 +17,7 @@ header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 yesterday = {'playTime': 0, 'points': 0}
 lastmonth = {'playTime': 0, 'points': 0}
 today = {'playTime': 0, 'points': 0}
+rtmp_url = 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605'
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)    
@@ -34,7 +35,6 @@ def teardown_module():
 
 
 def createHistoryData(startDate, dictype, isYesterdate):
-    rtmp_url = 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605'
     sqlList = []
     data1 = [{'start_at': ' 01:30:00',
     'end_at': ' 01:40:00',
@@ -112,8 +112,8 @@ def createHistoryData(startDate, dictype, isYesterdate):
             print('add today point')              
         else:
             dictype['points'] += data1[i]['point']            
-        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title) values ('" + begDatetime + "', '" + endDatetime + "', '"
-        sqlStr += idlist[0] + "', '" + rtmp_url + "', 0, 350, 0)" 
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime + "', '" + endDatetime + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
         sqlList.append(sqlStr)
         if data1[i]['point'] > 0:    
             sendDatetime = startDate + data1[i]['send_at']
@@ -126,7 +126,13 @@ def createHistoryData(startDate, dictype, isYesterdate):
             sqlStr += "target_user_id = '" +  idlist[0] + "', "
             sqlStr += "barrage_id = " + str(data1[i]['barrageid'])       
         else:
-            sqlStr = "insert into liveshow_gift_history set liveshow = 1, team = 148, "
+            sqlStr = "insert into liveshow(liveshow_id, title, start_time, end_time, liveshow_type, pool_id, gift_category, create_at, update_at) values ('" + str(int(time.time())) + "', " 
+            sqlStr += "'report test', '" + begDatetime + "', '" + endDatetime + "', 'individual', '" +  idlist[0] + "', 74, '" + begDatetime + "', '" + begDatetime + "')"
+            sqlList.append(sqlStr)
+            sqlStr = "insert into liveshow_team set liveshow = (select max(id) from liveshow), team_id = 'test1', "
+            sqlStr += "name = 'QA test', create_at = '" + begDatetime + "', update_at = '" + begDatetime + "'"
+            sqlList.append(sqlStr)
+            sqlStr = "insert into liveshow_gift_history set liveshow = (select max(id) from liveshow), team = (select max(id) from liveshow_team), "
             sqlStr += "giver_user_id = '" + idlist[2] + "', "
             sqlStr += "live_master_id = '" +idlist[0] + "', "
             sqlStr += "room_id = (select max(id) from live_room), gift_id = '09875a92-8ab3-44bc-a83f-f9da6d5b6619', "
@@ -158,21 +164,25 @@ class TestRevenue():
         pass
     
     def preparePostGift(self):
-    sqlStr = "select g.id, g.name, g.point from gift g join gift_category gc on category_id = gc.id where where gc.type = " + 'post_gif'"
-    dbResult = dbConnect.dbQuery(test_parameter, sqlStr)
-    self.giftId = dbResult[0][0]
-    self.giftName = dbResult[0][1]
-    self.giftPoint = dbResult[0][2]
-    header['X-Auth-Token'] = test_parameter['broadcaster_token']
-    header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']        
-    apiName = '/api/v2/liveMaster/photoPost'
-    body = {"photoPath": test_parameter['photo_url'], "content": "動態送禮。。測試中"}
-    api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-    apiName = '/api/v2/liveMaster/' + idlist[0] + '/photoPost?item=5&page=1'
-    res = api.apiFunctio(test_parameter['prefix'], header, apiName, 'get', None)
-    restext = json.loads(res.text)
-    self.postId = restext['data'][0]['id']
-
+        sqlStr = "select g.id, g.name, g.point from gift_v2 g join gift_category_v2 gc on category_id = gc.id where gc.type = 'post_gift' and g.point > 0 limit 1"
+        dbResult = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+        pprint(dbResult)
+        self.giftId = dbResult[0][0]
+        self.giftName = dbResult[0][1]
+        self.giftPoint = dbResult[0][2]
+        header['X-Auth-Token'] = test_parameter['broadcaster_token']
+        header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']        
+        apiName = '/api/v2/liveMaster/photoPost'
+        body = {"photoPath": test_parameter['photo_url'], "content": "動態送禮。。測試中"}
+        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
+        #print('/api/v2/liveMaster/photoPost')
+        #pprint(json.loads(res.text))
+        apiName = '/api/v2/liveMaster/' + idlist[0] + '/photoPost?item=5&page=1'
+        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
+        restext = json.loads(res.text)
+        self.postId = restext['data'][0]['id']
+        #print('postid =%d'%self.postId)
+        
     def insertData(self, sqlList):
         #pprint(sqlList)
         dbConnect.dbSetting(test_parameter['db'], sqlList)
@@ -211,8 +221,8 @@ class TestRevenue():
         begDatetime = dateInfo + ' 07:00:00'
         endDatetime = dateInfo + ' 07:29:58'
         sendDatetime = dateInfo + ' 07:00:51'
-        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title) values ('" + begDatetime + "', '" + endDatetime + "', '"
-        sqlStr += idlist[0] + "', 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605', 0, 350, 0)"        
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime + "', '" + endDatetime + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
         sqlList.append(sqlStr) 
         sqlStr = "insert into live_room_gift set consumption_point = 600000, "
         sqlStr += "create_at = '" + sendDatetime + "', "
@@ -254,13 +264,13 @@ class TestRevenue():
         dateInfo = (datetime.today() - timedelta(hours=8)).strftime('%Y-%m-%d')
         begDatetime = dateInfo + ' 08:30:00'
         endDatetime = dateInfo + ' 08:55:00'
-        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title) values ('" + begDatetime + "', '" + endDatetime + "', '"
-        sqlStr += idlist[0] + "', 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605', 0, 350, 0)"        
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime + "', '" + endDatetime + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
         sqlList.append(sqlStr) 
         begDatetime1 = dateInfo + ' 09:00:00'
         endDatetime1 = dateInfo + ' 09:35:00'    
-        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title) values ('" + begDatetime1 + "', '" + endDatetime1 + "', '"
-        sqlStr += idlist[0] + "', 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605', 0, 350, 0)"        
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime1 + "', '" + endDatetime1 + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
         sqlList.append(sqlStr)
         self.insertData(sqlList)
         apiName = '/api/v2/liveMaster/{user id}/revenue/summary'
@@ -296,11 +306,15 @@ class TestRevenue():
         begDatetime = dateInfo + ' 11:30:00'
         endDatetime = dateInfo + ' 11:40:00'
         sendDatetime = dateInfo + ' 11:32:00'
-        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title) values ('" + begDatetime + "', '" + endDatetime + "', '"
-        sqlStr += idlist[0] + "', 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605', 0, 350, 0)"        
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime + "', '" + endDatetime + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
         sqlList.append(sqlStr) 
-        sqlStr = "insert into live_room_gift(agency_amount, consumption_point, create_at, create_user_id, master_amount, room_id, service_amount, status, target_user_id, barrage_id) values (0, 350, '"
-        sqlStr += sendDatetime + "', '" + idlist[2] + "', 74.24242, 5487, 31.81818, 0, '" + idlist[0] + "', 2)"
+        sqlStr = "insert into live_room_gift set consumption_point = 350"
+        sqlStr += ", create_at = '" + sendDatetime + "', "
+        sqlStr += "create_user_id = '" +  idlist[2]  + "', "
+        sqlStr += "room_id = (select max(id) from live_room), status = 0, "
+        sqlStr += "target_user_id = '" +  idlist[0] + "', "
+        sqlStr += "barrage_id = 2"   
         sqlList.append(sqlStr) 
         self.insertData(sqlList)
         apiName = '/api/v2/liveMaster/{user id}/revenue/summary'
@@ -337,10 +351,16 @@ class TestRevenue():
         begDatetime = dateInfo + ' 14:30:00'
         endDatetime = dateInfo + ' 16:50:00'
         sendDatetime = dateInfo + ' 16:32:00'
-        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title) values ('" + begDatetime + "', '" + endDatetime + "', '"
-        sqlStr += idlist[0] + "', 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605', 0, 350, 0)"        
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime + "', '" + endDatetime + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
         sqlList.append(sqlStr) 
-        sqlStr = "insert into liveshow_gift_history set liveshow = 1, team = 148, "
+        sqlStr = "insert into liveshow(liveshow_id, title, start_time, end_time, liveshow_type, pool_id, gift_category, create_at, update_at) values ('" + str(int(time.time())) + "', "
+        sqlStr += "'report test', '" + begDatetime + "', '" + endDatetime + "', 'individual', '" +  idlist[0] + "', 74, '" + begDatetime + "', '" + begDatetime + "')"
+        sqlList.append(sqlStr)
+        sqlStr = "insert into liveshow_team set liveshow = (select max(id) from liveshow), team_id = 'test1', "
+        sqlStr += "name = 'QA test', create_at = '" + begDatetime + "', update_at = '" + begDatetime + "'"
+        sqlList.append(sqlStr)
+        sqlStr =  "insert into liveshow_gift_history set liveshow = (select max(id) from liveshow), team = (select max(id) from liveshow_team), "
         sqlStr += "giver_user_id = '" + idlist[2] + "', "
         sqlStr += "live_master_id = '" +idlist[0] + "', "
         sqlStr += "room_id = (select max(id) from live_room), gift_id = '09875a92-8ab3-44bc-a83f-f9da6d5b6619', "
@@ -460,13 +480,13 @@ class TestRevenue():
 
     def testSendGiftToPhoto(self):
         #動態贈禮
-        preparePostGift()
-        send_at = int(time.time())
+        self.preparePostGift()
         apiName = '/api/v2/identity/sendGift'
         header['X-Auth-Token'] = test_parameter['user_token']
         header['X-Auth-Nonce'] = test_parameter['user_nonce']         
         body = {'giftId': self.giftId, 'postId': self.postId}
-        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
+        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
+        print(json.loads(res.text))
         apiName = '/api/v2/liveMaster/{user id}/revenue/summary'
         header['X-Auth-Token'] = test_parameter['broadcaster_token']
         header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']         

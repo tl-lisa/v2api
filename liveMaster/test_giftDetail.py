@@ -50,7 +50,7 @@ class TestReceiveGiftDetail():
 
 
     def sendPostGift(self):
-        sqlStr = "select id, point from gift where category_id = 108 and status = 1"
+        sqlStr = "select id, point from gift_v2 where category_id = 108 and is_active = 1 limit 1"
         result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
         giftId = result[0][0]
         point = result[0][1]
