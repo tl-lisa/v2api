@@ -1,155 +1,163 @@
-#milestone18 加入動態贈禮
-import json
-import requests
-import pymysql
 import time
-import string
+import json
+import pytest
 from ..assistence import api
 from ..assistence import initdata
 from ..assistence import dbConnect
 from pprint import pprint
+from datetime import datetime, timedelta
+from operator import itemgetter
 
 env = 'testing'
 test_parameter = {}
-header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
+cards = []
+idlist = []   
+todayList = []
+today1List = []
+yesterdayList = []
+lastmonthList = []
+UserInfo = {}
+header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
+rtmp_url = 'rtmp://ottworigin2.media.hinet.net/live_angel06/3955fd05-309f-4a07-a8a2-a2bb6146e605'
 
-def setup_module():
-    initdata.set_test_data(env, test_parameter)
+
+def initTestingData():
+    #print('init data')   
+    header['X-Auth-Token'] = test_parameter['backend_token']
+    header['X-Auth-Nonce'] = test_parameter['backend_nonce']         
+    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header))
+    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
+    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
+    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))
+    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster2_acc'], header))
+    initdata.resetData(test_parameter['db'], idlist[0])
+
+initdata.set_test_data(env, test_parameter) 
+initTestingData()
 
 
-def teardown_module():
-    pass   
+def createHistoryData(startDate, dictype):
+    sqlList = []
+    data1 = [{'start_at': ' 01:30:00',
+    'end_at': ' 01:40:00',
+    'send_at': ' 01:31:00',
+    'point': 1200,
+    'giftid': '93364e78-6e3b-442d-9eca-d37d491666ef',
+    'barrageid': 'NULL'},
+    {'start_at': ' 11:20:00',
+    'end_at': ' 11:50:00',
+    'send_at': ' 11:31:00',
+    'point': 35,
+    'giftid': '',
+    'barrageid': 1},
+    {'start_at': ' 13:20:00',
+    'end_at': ' 14:15:00',
+    'send_at': ' 13:21:00',
+    'point': 0,
+    'giftid': '',
+    'barrageid': 'NULL'},
+    {'start_at': ' 15:50:00',
+    'end_at': ' 16:31:00',
+    'send_at': ' 16:01:00',
+    'point': 3000,
+    'giftid': 'e6e8aed2-7571-4516-8376-78d1dd4031a0',
+    'barrageid': 'NULL'}]
+
+    for i in range(len(data1)):
+        begDatetime = startDate + data1[i]['start_at']
+        endDatetime = startDate + data1[i]['end_at']
+        sendDatetime = startDate + data1[i]['send_at']
+        if data1[i]['giftid'] != '':
+            sqlStr = "select name from gift_v2 where uuid = '" + data1[i]['giftid'] + "'"
+            result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+        if dictype == 'yesterday':
+            if (data1[i]['send_at'] == ' 16:01:00'):
+                if (data1[i]['giftid'] != '') and (data1[i]['point'] != 0):
+                    todayList.append({'name': result[0][0], 'point': data1[i]['point'], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))}) 
+                elif (data1[i]['giftid'] == '') and (data1[i]['point'] != 0):
+                    todayList.append({'name': str(data1[i]['point']) + '點彈幕', 'point': data1[i]['point'], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+                else:
+                    sqlStr = "select name, point from gift_v2 where uuid = '09875a92-8ab3-44bc-a83f-f9da6d5b6619'"
+                    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+                    todayList.append({'name': result[0][0], 'point': result[0][1], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+            else:
+                #print('yeserter')
+                if (data1[i]['giftid'] != '') and (data1[i]['point'] != 0):
+                    yesterdayList.append({'name': result[0][0], 'point': data1[i]['point'], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+                elif (data1[i]['giftid'] == '') and (data1[i]['point'] != 0):
+                    yesterdayList.append({'name': str(data1[i]['point']) + '點彈幕', 'point': data1[i]['point'], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+                else:
+                    sqlStr = "select name, point from gift_v2 where uuid = '09875a92-8ab3-44bc-a83f-f9da6d5b6619'"
+                    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+                    yesterdayList.append({'name': result[0][0], 'point': result[0][1], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+        else:  
+            if (data1[i]['giftid'] != '') and (data1[i]['point'] != 0):
+                lastmonthList.append({'name': result[0][0], 'point': data1[i]['point'], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+            elif (data1[i]['giftid'] == '') and (data1[i]['point'] != 0):
+                lastmonthList.append({'name': str(data1[i]['point']) + '點彈幕', 'point': data1[i]['point'], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))}) 
+            else:
+                sqlStr = "select name, point from gift_v2 where uuid = '09875a92-8ab3-44bc-a83f-f9da6d5b6619'"
+                result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+                lastmonthList.append({'name': result[0][0], 'point': result[0][1], 'create_at': int((datetime.strptime(sendDatetime, '%Y-%m-%d %H:%M:%S') + (timedelta(hours=8))).strftime('%s'))})
+        sqlStr = "insert into live_room(create_at, end_at, live_master_id, rtmp_url, status, chat_server_id, title, current_count, total_users) values ('" 
+        sqlStr += begDatetime + "', '" + endDatetime + "', '" + idlist[0] + "', '" + rtmp_url + "', 0, 350, 0, 0, 0)" 
+        sqlList.append(sqlStr)
+        if data1[i]['point'] > 0:    
+            sqlStr = "insert into live_room_gift set consumption_point = " + str(data1[i]['point'])
+            sqlStr += ", create_at = '" + sendDatetime + "', "
+            sqlStr += "create_user_id = '" +  idlist[2]  + "', "
+            sqlStr += "room_id = (select max(id) from live_room), status = 0, "
+            if data1[i]['giftid'] != '':
+                sqlStr += "gift_id = '" + data1[i]['giftid'] + "', "
+            sqlStr += "target_user_id = '" +  idlist[0] + "', "
+            sqlStr += "barrage_id = " + str(data1[i]['barrageid'])       
+        else:
+            sqlStr = "insert into liveshow(liveshow_id, title, start_time, end_time, liveshow_type, pool_id, gift_category, create_at, update_at) values ('" + str(int(time.time())) + "', " 
+            sqlStr += "'report test', '" + begDatetime + "', '" + endDatetime + "', 'individual', '" +  idlist[0] + "', 74, '" + begDatetime + "', '" + begDatetime + "')"
+            sqlList.append(sqlStr)
+            sqlStr = "insert into liveshow_team set liveshow = (select max(id) from liveshow), team_id = 'test1', "
+            sqlStr += "name = 'QA test', create_at = '" + begDatetime + "', update_at = '" + begDatetime + "'"
+            sqlList.append(sqlStr)
+            sqlStr = "insert into liveshow_gift_history set liveshow = (select max(id) from liveshow), team = (select max(id) from liveshow_team), "
+            sqlStr += "giver_user_id = '" + idlist[2] + "', "
+            sqlStr += "live_master_id = '" +idlist[0] + "', "
+            sqlStr += "room_id = (select max(id) from live_room), gift_id = '09875a92-8ab3-44bc-a83f-f9da6d5b6619', "
+            sqlStr += "points = 50, ratio = 2.00, "
+            sqlStr += "create_at = '" + sendDatetime + "'"
+        sqlList.append(sqlStr)             
+    dbConnect.dbSetting(test_parameter['db'], sqlList)
 
 
 class TestSendGiftDetail():
-    idlist = []
-    create_At = int(time.time()) - 28800
-    postId =  ''
-    giftId = ''
-    giftName = ''
-    giftPoint = ''
-
-    def setup_class(self):
-        sqlList = []
-        header['X-Auth-Token'] = test_parameter['backend_token']
-        header['X-Auth-Nonce'] = test_parameter['backend_nonce']         
-        self.idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header))
-        self.idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
-        self.idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
-        self.idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))
-        initdata.resetData(test_parameter['db'], self.idlist[0])
-        sqlStr = "insert into live_room_gift(agency_amount, consumption_point, create_at, create_user_id, master_amount, room_id, service_amount, status, gift_id, target_user_id) values (0, 600000, FROM_UNIXTIME("
-        sqlStr += str(self.create_At) + ", '%Y-%m-%d %H:%i:%s'), '" + self.idlist[2] + "', 127272.72726, 5487, 54545.45454, 0, 'fd514de8-fdfb-4c56-9170-a9d92ffa125a', '" + self.idlist[0] + "')"
-        sqlStr1 = "insert into live_room_gift(agency_amount, consumption_point, create_at, create_user_id, master_amount, room_id, service_amount, status, target_user_id, barrage_id) values (0, 35,  FROM_UNIXTIME("
-        sqlStr1 += str(self.create_At + 5) + ", '%Y-%m-%d %H:%i:%s'), '" + self.idlist[2] + "', 7.4242, 5487, 3.1818, 0, '" + self.idlist[0] + "', 1)"
-        sqlStr2 = "insert into live_room_gift(agency_amount, consumption_point, create_at, create_user_id, master_amount, room_id, service_amount, status, target_user_id, barrage_id) values (0, 350,  FROM_UNIXTIME("
-        sqlStr2 += str(self.create_At + 10) + ", '%Y-%m-%d %H:%i:%s'), '" + self.idlist[2] + "', 74.24242, 5487, 31.81818, 0, '" + self.idlist[0] + "', 2)"
-        sqlStr3 = "insert into liveshow_gift_history(liveshow, team, giver_user_id, live_master_id, room_id, gift_id, points, ratio, create_at) values (1, 148, '"
-        sqlStr3 += self.idlist[2] + "', '" + self.idlist[0] + "', 4567, '09875a92-8ab3-44bc-a83f-f9da6d5b6619', 56, 2.00, FROM_UNIXTIME(" + str(self.create_At + 120) + ", '%Y-%m-%d  %H:%i:%s'))"
-        sqlList.extend([sqlStr, sqlStr1, sqlStr2, sqlStr3])
-        sqlList.append("update remain_points set remain_points = 100 where identity_id = '" + self.idlist[2] + "'")
-        dbConnect.dbSetting(test_parameter['db'], sqlList)
-
-    def teardown_class(self):
-        pass
-
-    def preparePostGift(self):
-        sql = "select g.id, g.name, g.point from gift g  join gift_category gc on category_id = gc.id where gc.type = 'post_gif'"
-        dbResult = dbConnect.dbQuery(test_parameter, sql)
-        self.giftId = dbResult[0][0]
-        self.giftName = dbResult[0][1]
-        self.giftPoint = dbResult[0][2]
-        header['X-Auth-Token'] = test_parameter['broadcaster_token']
-        header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']        
+    def sendPostGift(self):
+        sql = "select g.id, g.name, g.point from gift_v2 g join gift_category_v2 gc on category_id = gc.id where gc.type = 'post_gift' and g.point > 0"
+        dbResult = dbConnect.dbQuery(test_parameter['db'], sql)
+        giftId = dbResult[0][0]
+        giftName = dbResult[0][1]
+        giftPoint = dbResult[0][2]
+        header['X-Auth-Token'] = test_parameter['broadcaster2_token']
+        header['X-Auth-Nonce'] = test_parameter['broadcaster2_nonce']        
         apiName = '/api/v2/liveMaster/photoPost'
         body = {"photoPath": test_parameter['photo_url'], "content": "動態送禮。。測試中"}
         api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-        apiName = '/api/v2/liveMaster/' + self.idlist[0] + '/photoPost?item=5&page=1'
+        apiName = '/api/v2/liveMaster/' + idlist[4] + '/photoPost?item=5&page=1'
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         restext = json.loads(res.text)
-        self.postId = restext['data'][0]['id']
-
-    def testConditionIsMinisec(self):
-        #時間為毫秒
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=1&page=1'
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[2])
-        body = {'startTime': self.create_At * 1000, 'endTime': (self.create_At + 5) * 1000}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        assert res.status_code // 100 != 5
-
-    def testBodyIsEmpty(self):
-        #時間條件空值
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=1&page=1'    
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[2])
-        body = {}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        assert res.status_code // 100 == 2        
-
-    def testWrongAuth(self):
-        #token/noce錯誤
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=1&page=1'    
-        header['X-Auth-Token'] = test_parameter['err_token']
-        header['X-Auth-Nonce'] = test_parameter['err_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[2])
-        body = {'startTime': self.create_At , 'endTime': (self.create_At + 5)}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        assert int(res.status_code / 100) == 4
-
-    def testGiftListIsEmpty(self):
-        #未送出任何禮物
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=1&page=1'    
+        postId = restext['data'][0]['id']
+        apiName = '/api/v2/identity/sendGift'
         header['X-Auth-Token'] = test_parameter['user1_token']
         header['X-Auth-Nonce'] = test_parameter['user1_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[3])
-        body = {'startTime': self.create_At, 'endTime': (self.create_At + 5)}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        restext = json.loads(res.text)
-        assert int(res.status_code / 100) == 2
-        assert len(restext['data']) == 0
+        body = {'giftId': giftId, 'postId': postId}
+        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
+        today1List.append({'name': giftName, 'point': giftPoint, 'createAt': int(time.time())}) 
 
-    def testConditionOfTime(self):
-        #時間區間測試
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=1&page=1'    
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[2])
-        body = {'startTime': self.create_At , 'endTime': self.create_At + 130}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        restext = json.loads(res.text)
-        assert int(res.status_code / 100) == 2
-        assert len(restext['data']) == 1
-        assert restext['totalCount'] == 4
-
-    def testVerifyResult(self):
-        #資料確認
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=10&page=1'    
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[2])
-        body = {'startTime': self.create_At + 5, 'endTime': self.create_At + 5}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        restext = json.loads(res.text)
-        assert int(res.status_code / 100) == 2
-        assert len(restext['data']) == 1
-        assert restext['totalCount'] == 1
-        assert restext['data'][0]['giftPoint'] == 35
-        assert restext['data'][0]['user']['id'] == self.idlist[0]
-        assert restext['data'][0]['createAt'] == self.create_At + 5
-        assert restext['data'][0]['giftName'] == '35點彈幕訊息'
-
-    def testSendMessage(self):
-        # 1對1私訊點數
-        send_at = int(time.time())
+    def sendMessage(self):
         apiName = '/api/v2/liveMaster/instantMessage'
-        header['X-Auth-Token'] = test_parameter['broadcaster_token']
-        header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']             
+        header['X-Auth-Token'] = test_parameter['broadcaster2_token']
+        header['X-Auth-Nonce'] = test_parameter['broadcaster2_nonce']             
         content = '哈囉，你好。歡迎來到Truelove😄😄😄 ' 
         body = { 
-        "receiver": self.idlist[2],
+        "receiver": idlist[3],
         "msgType": "text",
         "textContent": content,
         "imageUrl": "",
@@ -159,11 +167,11 @@ class TestSendGiftDetail():
         }
         api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
         apiName = '/api/v2/identity/instantMessage'
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']      
+        header['X-Auth-Token'] = test_parameter['user1_token']
+        header['X-Auth-Nonce'] = test_parameter['user1_nonce']      
         content = '哈囉，你好。我是你的小粉絲😄😄😄 ' 
         body = { 
-        "receiver": self.idlist[0],
+        "receiver": idlist[4],
         "msgType": "text",
         "textContent": content,
         "imageUrl": "",
@@ -172,37 +180,74 @@ class TestSendGiftDetail():
         "origin": "giftGiversToSendIM"
         }
         api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)  
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=10&page=1'    
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        apiName1 = apiName.replace('{user id}', self.idlist[2])
-        body = {'startTime': send_at - 1, 'endTime': send_at + 2}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
-        restext = json.loads(res.text)
-        assert res.status_code // 100 == 2
-        assert len(restext['data']) == 1
-        assert restext['totalCount'] == 1
-        assert restext['data'][0]['giftPoint'] == 20
-        assert restext['data'][0]['user']['id'] == self.idlist[0]
-        assert restext['data'][0]['giftName'] == '20點傳送訊息'
+        today1List.append({'name': '20點聊天訊息', 'point': 20, 'createAt': int(time.time())}) 
+     
 
-    def testSendGiftToPhoto(self):
-        #動態贈禮
-        self.preparePostGift
-        send_at = int(time.time())
-        apiName = '/api/v2/identity/sendGift'
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']         
-        body = {'giftId': self.giftId, 'postId': self.postId}
-        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=10&page=1'       
-        apiName = apiName.replace('{user id}', self.idlist[2])
-        body = {'startTime': send_at - 1, 'endTime': send_at + 2}
-        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-        restext = json.loads(res.text)
-        assert res.status_code // 100 == 2
-        assert len(restext['data']) == 1
-        assert restext['totalCount'] == 1
-        assert restext['data'][0]['giftPoint'] == self.giftPoint
-        assert restext['data'][0]['user']['id'] == self.idlist[0]
-        assert restext['data'][0]['giftName'] == self.giftName
+    def createDictionary(self, sender, receiver, t1, y1, last1):
+    
+        UserInfo[sender] = [{'liveMaster': receiver,
+                            'today': t1,
+                            'yesterday': y1,
+                            'lastmonth': last1}]
+
+    @pytest.fixture(scope='class')
+    def addTestData(self):
+        #print('add history data')
+        dataDateIs = (datetime.today() - timedelta(days=datetime.today().day+2)).strftime('%Y-%m-%d')
+        createHistoryData(dataDateIs, 'lastmonth')
+        dataDateIs = (datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d')
+        createHistoryData(dataDateIs, 'yesterday') 
+        self.createDictionary(idlist[2], idlist[0], todayList, yesterdayList, lastmonthList) 
+        #pprint(UserInfo)
+        self.sendMessage()
+        self.sendPostGift()
+        self.createDictionary(idlist[3], idlist[4], today1List, [], []) 
+        #pprint(UserInfo)
+
+
+    @pytest.mark.parametrize("auth, queryDate, isTimeCorrect, isBodyNull, liveaMaster, sender, expected", [
+        ([test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce']], 'today', True, False, idlist[0], idlist[2], 4),
+        ([test_parameter['user1_token'], test_parameter['user1_nonce']], 'today', True, False, idlist[4], idlist[3], 2),
+        #([test_parameter['user_token'], test_parameter['user_nonce']], 'today', True, False, idlist[0], idlist[2], 2),
+        ([test_parameter['err_token'], test_parameter['err_nonce']], 'today', True, False, idlist[0], idlist[2], 4)
+    ])
+    def testGetTotalList(self, addTestData, auth, queryDate, isTimeCorrect, isBodyNull, liveaMaster, sender, expected):
+        totalCount = 0
+        apiName = '/api/v2/identity/{user id}/sendGift/detail?item=10&page=1'  
+        header['X-Auth-Token'] = auth[0]
+        header['X-Auth-Nonce'] = auth[1]        
+        header['Content-Type'] = 'application/json'
+        apiName1 = apiName.replace('{user id}', sender)
+        if queryDate == 'today':
+            start_at = int(datetime.strptime(((datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
+            end_at = int((datetime.today() - timedelta(hours=8)).strftime('%s'))
+        elif queryDate == 'yesterday':
+            start_at = int(datetime.strptime(((datetime.today() - timedelta(days=2)).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
+            end_at = int(datetime.strptime(((datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d 15:59:59')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
+        else:
+            start_at = int(datetime.strptime(((datetime.today() - timedelta(days=datetime.today().day+15)).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
+            end_at = int(datetime.strptime(((datetime.today() - timedelta(days=datetime.today().day+1)).strftime('%Y-%m-%d 15:59:59')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
+        if isBodyNull:
+            body = {}
+        else:
+            if isTimeCorrect:
+                body = {'startTime': start_at, 'endTime': end_at}
+            else: 
+                body = {'startTime': start_at * 1000, 'endTime': end_at * 1000}
+        #pprint(body)
+        res = api.apiFunction(test_parameter['prefix'], header, apiName1, 'post', body)
+        assert res.status_code // 100 == expected
+        if expected == 2:
+            restext = json.loads(res.text)
+            pprint(restext)
+            if sender in UserInfo:
+                pprint(UserInfo[sender][0][queryDate])
+                if isBodyNull:
+                    checklist = ['today', 'lastmonth', 'yesterday']
+                    for j in checklist:
+                        totalCount += len(UserInfo[sender][0][j])
+                else:
+                    assert restext['totalCount'] == len(UserInfo[sender][0][queryDate])
+            else:
+                assert restext['totalCount'] == 0
+

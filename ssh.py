@@ -60,20 +60,42 @@ if __name__ == '__main__':
     #now = int(time.mktime((datetime.today() - timedelta(days=1)).timetuple()))
     now = datetime.fromtimestamp(int(time.time()))# .strftime('%Y-%m-%d %H:%M:%S')
     yesterday = datetime.fromtimestamp(int(time.time())) - timedelta(days=1)
-    print(now, yesterday) 
+    #print(now, yesterday) 
     dtDay = (datetime.today() - timedelta(days=7+datetime.today().weekday()) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
     dtDay = datetime.today() - timedelta(days=1+datetime.today().weekday())
     dtDay = datetime.today().day
     dtDay = datetime.strptime('2019-12-31 00:00:00', '%Y-%m-%d %H:%M:%S')
-    print(dtDay.month)
+    #print(dtDay.month)
 
-    pprint(yesterday)
-    pprint(thismonth)
-    pprint(lastmonth)
+    #pprint(yesterday)
+    #pprint(thismonth)
+    #pprint(lastmonth)
 
     testdic = {'lisa': ['1', '2', '3']}
-    print(testdic['lisa'][0])
+    #print(testdic['lisa'][0])
     testdic['lisa'].pop(0)
-    print(testdic)
+    #print(testdic)
     #execut_calculate_statistics('testing-api.truelovelive.com.tw')
+    testday = int(datetime.strptime(((datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
+    #print(testday)
     
+    numinfo = {}
+    dicodd = {}
+    diceven = {}
+    odd = []
+    even = []
+    numtype = ['odd', 'even']
+    numbername = '0-9'
+    finallist = []
+    for i in range(10):
+        if i % 2 == 0:
+            even.append(i)
+        else:
+            odd.append(i)
+    dicodd.update({numtype[0]: odd})
+    diceven.update({numtype[1]: even})
+    finallist.extend([dicodd, diceven])
+    numinfo.update({numbername: finallist})
+    
+    pprint(numinfo)
+

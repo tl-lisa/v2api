@@ -80,9 +80,11 @@ def set_test_data(env, test_parameter):
 
 def resetData(dbenv, live_master_id):
     sqlList = []
+    sqlList.append("update gift_v2 set deleted_at = NULL, is_active = 1")
+    sqlList.append("update gift_category_v2 set deleted_at = NULL, start_time = NULL, end_time = NULL")
     truncateList = ['user_follows', 'fans', 'user_blocks', 'fans_history', 'instant_message_point_history', 'instant_message_video', 'instant_message_image', 'instant_message_text', 'post_gift_history', 'photo_report', 'photo_comment', 'photo_like']
     truncateList.extend(['live_room_gift', 'liveshow_gift_history', 'zego_master', 'play_event_log', 'live_master_statistics', 'live_room_log', 'top_sort'])
-    for i in (truncateList):
+    for i in truncateList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)
     deleteList = ['instant_message', 'dialog_member', 'dialog', 'quota_log', 'photo_post', 'point_consumption_history', 'liveshow_team', 'live_room', 'liveshow']
