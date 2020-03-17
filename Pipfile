@@ -16,6 +16,7 @@ requests = "*"
 pycrypto = "*"
 paramiko = "*"
 pyjwt = "*"
+python-settings = "*"
 
 [requires]
 python_version = "3.7"
