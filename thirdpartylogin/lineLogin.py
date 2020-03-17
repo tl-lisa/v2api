@@ -4,10 +4,10 @@ import hmac
 import json
 import time
 import requests
-from . import setting as my_local_settings
 from python_settings import settings
+from . import setting as mysetting
 
-settings.configure(my_local_settings) 
+settings.configure(mysetting) 
 
 def create_auth_url():
     from urllib.parse import urlencode
