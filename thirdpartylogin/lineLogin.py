@@ -9,8 +9,10 @@ from . import setting as mysetting
 
 settings.configure(mysetting) 
 
+
 def create_auth_url():
     from urllib.parse import urlencode
+    print('call authorize')
     url = "https://access.line.me/oauth2/v2.1/authorize"
     data = {}
     data['response_type'] = 'code'

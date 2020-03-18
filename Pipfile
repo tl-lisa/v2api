@@ -17,6 +17,7 @@ pycrypto = "*"
 paramiko = "*"
 pyjwt = "*"
 python-settings = "*"
+selenium = "*"
 
 [requires]
 python_version = "3.7"
