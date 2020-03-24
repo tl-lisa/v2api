@@ -72,7 +72,7 @@ def createTestdata():
 
 
 @pytest.mark.parametrize("test_input, expected", createTestdata())
-def testGeLiveList(test_input, expected):
+def testGetLiveList(test_input, expected):
     zegoInfo = openZego()
     #print(str(zegoInfo))(str(zegoInfo))
     print('socket info = %s' %zegoInfo[0])

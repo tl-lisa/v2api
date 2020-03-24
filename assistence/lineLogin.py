@@ -50,3 +50,13 @@ def line_login():
     auth_code = code_url[code_url.find('=') + 1 :code_url.find('&')]
     Browser.quit()
     return (get_toke(auth_code))
+
+def getGamil():
+    import imaplib
+    mailserver = imaplib.IMAP4_SSL('imap.gmail.com', 993)
+    mailserver.login(settings.email, settings.email_password)
+    status, count = mailserver.select('Inbox')
+    status, data = mailserver.fetch(count[0], '(UID BODY[TEXT])')
+    print (data[0][1])
+    mailserver.close()
+    mailserver.logout()

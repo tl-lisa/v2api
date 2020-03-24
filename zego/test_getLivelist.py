@@ -89,7 +89,7 @@ def createTestdata():
     return(testData)
 
 @pytest.mark.parametrize("test_input, expected", createTestdata())
-def testGeLiveList(test_input, expected):
+def testGetLiveList(test_input, expected):
     header['X-Auth-Token'] = test_input[0]
     header['X-Auth-Nonce'] = test_input[1] 
     if test_input[5] == 'zego':
