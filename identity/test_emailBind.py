@@ -8,6 +8,7 @@ import string
 from datetime import datetime, timedelta
 from ..assistence import dbConnect
 from ..assistence import initdata
+from ..assistence import api
 from pprint import pprint
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -19,8 +20,6 @@ mailList = ['tl-lisa@truelove.dev', 'tlqa20200313@gmail.com', 'lisa233152@gmail.
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
-
-def teardown_module():
     sqlList = []
     tableList = ['identity_email_bind_history', 'identity_profile']
     sqlStr = 'select identity_id from identity_profile'
@@ -81,7 +80,19 @@ def getTestData(testName):
         ])
 
 class TestSendEmail():
-    head = {'Content-Type': 'application/json'}
+    head = {'Content-Type': 'application/json', 'X-Auth-Token': '', 'X-Auth-Nonce': '', 'Authorization': ''}
+    def setup_class(self):
+        url = '/api/v2/identity/auth/login'
+        body = {
+            "account": "track0050",
+            "password": "123456",
+            "pushToken":"dshfklkrjhjayegrkldfkhgdkfasd"
+        }
+        res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body) 
+        restext = json.loads(res.text)
+        self.head['X-Auth-Token'] = restext['data']['token']
+        self.head['X-Auth-Nonce'] = restext['data']['nonce']
+        self.head['Authorization'] = restext['data']['idToken']
 
     def teardown_function(self):
         sqlList = []
@@ -89,28 +100,29 @@ class TestSendEmail():
         sqlList.append("alter table identity_email_bind_history auto_increment = 1")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
 
-    def runActiveCode(self, restext):
-        tempToken = restext['data']['tmpToken']
-        sqlStr = "select activate_code from identity_email_bind_history where token = '" + tempToken + "'"
+    def runActiveCode(self, bindMail):
+        sqlStr = "select activate_code from identity_email_bind_history where id = (select max(id) from identity_email_bind_history)"
         result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
         actCode = result[0][0]
-        url = test_parameter['prefix'] + '/api/v2/identity/binding/email/activate'
+        url = '/api/v2/identity/binding/email/activate'
         body = {
-             "tmpToken": tempToken,
-             "activateCode": actCode
-            }
-        requests.post(url, headers=self.head, json=body) 
+            "source": "advance",
+            "email": bindMail,
+            "password": '12345',
+            "activateCode": actCode
+        }
+        api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
 
     @pytest.mark.parametrize("regEmail, PWD, expected", getTestData('mailCreateTime'))
     def testMailCreateTime(self, regEmail, PWD, expected):
-        url = test_parameter['prefix'] + '/api/v2/identity/binding/email/send'
+        url = '/api/v2/identity/binding/email/send'
         for i in range(len(regEmail)):
             sqlList = [] 
             createTime = '' 
             body = {
                 'email': regEmail[i]
             }
-            res = requests.post(url, headers=self.head, json=body)     
+            res =  api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body) 
             restext = json.loads(res.text)
             pprint(restext)
             assert res.status_code == expected[i]
@@ -126,12 +138,12 @@ class TestSendEmail():
 
     @pytest.mark.parametrize("isBinded, bindEmail, expected", getTestData('parameteType'))
     def testSend(self, isBinded, bindEmail, expected):
-        url = test_parameter['prefix'] + '/api/v2/identity/binding/email/send'
+        url = '/api/v2/identity/binding/email/send'
         for i in range(len(bindEmail)):
             body = {
                 'email': bindEmail[i]
             }
-            res = requests.post(url, headers=self.head, json=body)     
+            res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)  
             restext = json.loads(res.text)
             pprint(restext)
             assert res.status_code == expected[i]
@@ -149,13 +161,26 @@ class TestSendEmail():
 6.來源別不存在
 '''
 class TestActivateCode():
-    head = {'Content-Type': 'application/json'}
+    head = {'Content-Type': 'application/json', 'X-Auth-Token': '', 'X-Auth-Nonce': '', 'Authorization': ''}
+    def setup_class(self):
+        url = '/api/v2/identity/auth/login'
+        body = {
+            "account": "track0050",
+            "password": "123456",
+            "pushToken":"dshfklkrjhjayegrkldfkhgdkfasd"
+        } 
+        res = api.apiFunction(test_parameter['prefix'], {}, url, 'post', body)
+        restext = json.loads(res.text)
+        self.head['X-Auth-Token'] = restext['data']['token']
+        self.head['X-Auth-Nonce'] = restext['data']['nonce']
+        self.head['Authorization'] = restext['data']['idToken']
+
     def getActiveCode(self, bindMail):
-        url = test_parameter['prefix'] + '/api/v2/identity/binding/email/send'
+        url = '/api/v2/identity/binding/email/send'
         body = {
                     'email': bindMail
                 }
-        requests.post(url, headers=self.head, json=body)     
+        api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)    
         sqlStr = "select activate_code from identity_email_bind_history where id = (select max(id) from identity_email_bind_history)"
         result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
         actCode = result[0][0]
@@ -163,7 +188,7 @@ class TestActivateCode():
 
     @pytest.mark.parametrize("isSendMail, condition, bindMail, PWD, expected", getTestData('activeCode'))
     def testBindToActive(self, isSendMail, condition, bindMail, PWD, expected):
-        url = test_parameter['prefix'] + '/api/v2/identity/binding/email/activate'
+        url = '/api/v2/identity/binding/email/activate'
         if isSendMail:
             actCode = self.getActiveCode(bindMail)
         for i in range(len(bindMail)):
@@ -183,5 +208,5 @@ class TestActivateCode():
                 sqlList = ['update identity_email_bind_history set expires_in = 0 where id = (select max(id) from identity_email_bind_history)']
                 dbConnect.dbSetting(test_parameter['db'], sqlList)
             pprint(body)
-            res = requests.post(url, headers=self.head, json=body) 
+            res =  api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body) 
             assert res.status_code // 100 == expected[i]

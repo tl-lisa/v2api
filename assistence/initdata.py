@@ -19,7 +19,8 @@ def set_test_data(env, test_parameter):
         test_parameter['broadcaster_pass'] = '123456'
         test_parameter['broadcaster1_pass'] = '123456'
         #test_parameter['prefix'] = 'http://testing-api.truelovelive.com.tw'
-        test_parameter['prefix'] = 'http://35.201.246.119'
+        test_parameter['prefix'] = 'http://35.234.6.138'
+        test_parameter['db'] = '35.234.6.138'
         result = api.user_login(test_parameter['prefix'], test_parameter['user_acc'], test_parameter['user_pass'])
         test_parameter['user_token'] = result['token']
         test_parameter['user_nonce'] = result['nonce']
@@ -64,7 +65,6 @@ def set_test_data(env, test_parameter):
         test_parameter['market_token'] = result['token']
         test_parameter['market_nonce'] = result['nonce']       
         #test_parameter['db'] = 'testing-api.truelovelive.com.tw'
-        test_parameter['db'] = '35.201.246.119'
         test_parameter['photo_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/6e7103c048cd11ea83b942010a8c0017.png'
         test_parameter['preview_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/5abd6f60deb711e9a49e42010a8c1fc8.jpg'
         test_parameter['video_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/5abd6f60deb711e9a49e42010a8c9fc8.jpg'

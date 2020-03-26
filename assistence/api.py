@@ -336,21 +336,22 @@ def add_photo_comment(prefix, header1, pid, comment):
 def apiFunction(prefix, head, apiName, way, body):
     url = prefix + apiName  
     #print('url = %s, method= %s'% (url, way))   
-    if way == 'post':
-        if 'Content-Type' not in head.keys():
-            head['Content-Type'] = 'application/json'
-        res1 = requests.post(url, headers=head, json=body)
-    elif way == 'put':
-        if 'Content-Type' not in head.keys():
-            head['Content-Type'] = 'application/json'
-        res1 = requests.put(url, headers=head, json=body)    
-    elif way == 'get':   
+    if way in ('get', 'delete'):
         if 'Content-Type' in head.keys():
             del head['Content-Type']
-        res1 = requests.get(url, headers=head) 
     else:
-        if 'Content-Type' in head.keys():
-            del head['Content-Type']    
+        if 'Content-Type' not in head.keys():
+            head['Content-Type'] = 'application/json'
+    
+    if way == 'post':
+        res1 = requests.post(url, headers=head, json=body)
+    elif way == 'put':
+        res1 = requests.put(url, headers=head, json=body)    
+    elif way == 'get':   
+        res1 = requests.get(url, headers=head) 
+    elif way == 'delete':
         res1 = requests.delete(url, headers=head)    
+    elif way == 'patch':
+        res1 = requests.patch(url, headers=head, json=body)
     #print(json.loads(res1.text))
     return res1 

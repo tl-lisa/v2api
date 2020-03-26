@@ -49,7 +49,7 @@ class TestliveComment():
         assert res.status_code == 200
         assert len(restext['data']) == 5
         assert restext['totalCount'] == 10
-        assert restext['data'][0]['createAt'] <= restext['data'][1]['createAt']
+        assert restext['data'][0]['createAt'] >= restext['data'][1]['createAt']
 
         res = api.get_comment_list(test_parameter['prefix'], header, pid, '3', '2')
         restext = json.loads(res.text)
@@ -57,7 +57,7 @@ class TestliveComment():
         assert res.status_code == 200
         assert len(restext['data']) == 3
         assert restext['totalCount'] == 10
-        assert restext['data'][0]['comment'] == '動態評論3'
+        assert restext['data'][0]['comment'] == '動態評論6'
 
         res = api.get_comment_list(test_parameter['prefix'], header, '0', '5', '1')
         restext = json.loads(res.text)
