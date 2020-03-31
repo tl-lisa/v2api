@@ -17,25 +17,7 @@ test_parameter = {}
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
-    sqlList = []
-    tableList = ['identity_third_party', 'identity_line']
-    sqlStr = 'select identity_id from identity_third_party'
-    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
-    for i in tableList:
-        sqlStr = "TRUNCATE TABLE " + i
-        sqlList.append(sqlStr)       
-    for i in range(len(result[0])):
-        if i == 0:
-            sqlStr = "delete from identity where id in ('"
-        sqlStr += result[0][i] 
-        if i == len(result[0]):
-            sqlStr += "')"
-        else:
-            sqlStr += "', '"
-    sqlList.append(sqlStr)
-    sqlList.append("alter table " + tableList[0] + " auto_increment = 1") 
-    dbConnect.dbSetting(test_parameter['db'], sqlList)
-
+    initdata.clearIdentityData(test_parameter['db'])
 
 def getTestData():
     #condition, expected
@@ -59,7 +41,7 @@ class TestLineLogin():
     '''
     @pytest.mark.parametrize("condition, expected", getTestData())
     def testlineFlow(self, condition, expected):
-        url = '/api//v2/3rdParty/line/verify'
+        url = '/api/v2/3rdParty/line/verify'
         if condition == 'firstLogin':
             idToken, accessToken = (lineLogin.line_login())
             body = {
@@ -76,18 +58,18 @@ class TestLineLogin():
             self.auth.extend([idToken, accessToken])
         elif condition == 'accToken_Wrong':
             body = {
-                'accessToken': self.auth[0],
-                'idToken': idToken[3]
+                'accessToken': 'sUpdewDer123Oi',
+                'idToken': idToken[1]
             }
         elif condition == 'idToken_Wrong':
             body = {
-                'accessToken': self.auth[2],
-                'idToken': idToken[1]
+                'accessToken': self.auth[1],
+                'idToken': 'aBcdoeiDp'
             }
         elif condition == 'expired':
             body = {
                 'accessToken': self.auth[0],
-                'idToken': idToken[1]
+                'idToken': idToken[0]
             }
         res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body)
         assert res.status_code == expected

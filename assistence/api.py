@@ -13,7 +13,7 @@ def user_login(prefix, account, pwd):
         restext = json.loads(res.text)
         return(restext)
     else:
-        return()
+        return(json.loads(res.text))
 
 
 def user_login_1(prefix, account, pwd):
@@ -335,14 +335,15 @@ def add_photo_comment(prefix, header1, pid, comment):
 
 def apiFunction(prefix, head, apiName, way, body):
     url = prefix + apiName  
-    #print('url = %s, method= %s'% (url, way))   
+    print('url = %s, method= %s'% (url, way))   
     if way in ('get', 'delete'):
         if 'Content-Type' in head.keys():
             del head['Content-Type']
     else:
         if 'Content-Type' not in head.keys():
             head['Content-Type'] = 'application/json'
-    
+    print(head)
+    print(body)
     if way == 'post':
         res1 = requests.post(url, headers=head, json=body)
     elif way == 'put':
@@ -353,5 +354,6 @@ def apiFunction(prefix, head, apiName, way, body):
         res1 = requests.delete(url, headers=head)    
     elif way == 'patch':
         res1 = requests.patch(url, headers=head, json=body)
-    #print(json.loads(res1.text))
+    print('statusCode=%d'%res1.status_code)
+    print(json.loads(res1.text))
     return res1 

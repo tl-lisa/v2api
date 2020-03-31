@@ -15,7 +15,7 @@ def set_test_data(env, test_parameter):
         test_parameter['liveController2_acc'] = 'lv001'
         test_parameter['liveController3_acc'] = 'lv002'
         test_parameter['user_pass'] = '123456'
-        test_parameter['backend_pass'] = '12345678'
+        test_parameter['backend_pass'] = '123456'
         test_parameter['broadcaster_pass'] = '123456'
         test_parameter['broadcaster1_pass'] = '123456'
         #test_parameter['prefix'] = 'http://testing-api.truelovelive.com.tw'
@@ -25,6 +25,7 @@ def set_test_data(env, test_parameter):
         test_parameter['user_token'] = result['token']
         test_parameter['user_nonce'] = result['nonce']
         result = api.user_login(test_parameter['prefix'], test_parameter['liveController1_acc'], test_parameter['user_pass'])
+        print(result)
         test_parameter['liveController1_token'] = result['token']
         test_parameter['liveController1_nonce'] = result['nonce']
         result = api.user_login(test_parameter['prefix'], test_parameter['liveController2_acc'], test_parameter['user_pass'])
@@ -77,6 +78,28 @@ def set_test_data(env, test_parameter):
         changelist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
         api.change_roles(test_parameter['prefix'], header, changelist, '4') #轉回直播主
     return
+
+def clearIdentityData(dbInfo):
+    sqlList = []
+    tableList = ['identity_email_register_history', 'identity_email_bind_history', 'identity_third_party', 'identity_line', 'identity_profile']
+    sqlStr = "select identity_id from identity_third_party union select identity_id from identity_profile"
+    result = dbConnect.dbQuery(dbInfo, sqlStr)
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)       
+    sqlList.append(sqlStr)
+    for i in range(len(result)):
+        for j in range(len(result[i])):
+            if j == 0:
+                sqlStr = "delete from identity where id in ('"
+            sqlStr += result[i][j] 
+            if len(result[i]) - j == 1:
+                sqlStr += "')"
+            else:
+                sqlStr += "', '"
+        sqlList.append(sqlStr)
+    sqlList.append("alter table " + tableList[0] + " auto_increment = 1") 
+    dbConnect.dbSetting(dbInfo, sqlList)
 
 def resetData(dbenv, live_master_id):
     sqlList = []
