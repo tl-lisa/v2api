@@ -81,7 +81,9 @@ def getTestData(testName):
             (False, '', 'lisa@truelovelive.dev',  ['1234', '123456789012345678901', '123嗨', '123!4', '1234 ', '1234😄', ''], 4)
            # (True, '', 'lisa@truelovelive.dev', '123456', 2)
         ])
-@pytest.mark.skip()
+
+
+#@pytest.mark.skip()
 class TestSendEmail():
     head = {'Content-Type': 'application/json', 'X-Auth-Token': '', 'X-Auth-Nonce': '', 'Authorization': ''}
     def setup_class(self):
@@ -115,7 +117,6 @@ class TestSendEmail():
         }
         api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
 
-    #@pytest.mark.skip()
     @pytest.mark.parametrize("regEmail, PWD, expected", getTestData('mailCreateTime'))
     def testMailCreateTime(self, regEmail, PWD, expected):
         url = '/api/v2/identity/binding/email/send'
@@ -142,7 +143,6 @@ class TestSendEmail():
                 dbConnect.dbSetting(test_parameter['db'], sqlList)
             time.sleep(20)
 
-    #@pytest.mark.skip()
     @pytest.mark.parametrize("isBinded, bindEmail, expected", getTestData('parameteType'))
     def testSend(self, isBinded, bindEmail, expected):
         initdata.clearIdentityData(test_parameter['db'])

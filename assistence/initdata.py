@@ -25,7 +25,7 @@ def set_test_data(env, test_parameter):
         test_parameter['user_token'] = result['token']
         test_parameter['user_nonce'] = result['nonce']
         result = api.user_login(test_parameter['prefix'], test_parameter['liveController1_acc'], test_parameter['user_pass'])
-        print(result)
+        #print(result)
         test_parameter['liveController1_token'] = result['token']
         test_parameter['liveController1_nonce'] = result['nonce']
         result = api.user_login(test_parameter['prefix'], test_parameter['liveController2_acc'], test_parameter['user_pass'])
@@ -88,16 +88,21 @@ def clearIdentityData(dbInfo):
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)       
     sqlList.append(sqlStr)
-    for i in range(len(result)):
-        for j in range(len(result[i])):
-            if j == 0:
-                sqlStr = "delete from identity where id in ('"
-            sqlStr += result[i][j] 
-            if len(result[i]) - j == 1:
-                sqlStr += "')"
-            else:
-                sqlStr += "', '"
-        sqlList.append(sqlStr)
+    delList = ['identity_role', 'remain_points', 'user_settings', 'user_experience', 'identity']
+    for k in delList:
+        for i in range(len(result)):
+            for j in range(len(result[i])):
+                if j == 0:
+                    if k == 'identity':
+                        sqlStr = "delete from " + k + " where id in ('"
+                    else:
+                        sqlStr = "delete from " + k + " where identity_id in ('"
+                sqlStr += result[i][j] 
+                if len(result[i]) - j == 1:
+                    sqlStr += "')"
+                else:
+                    sqlStr += "', '"
+            sqlList.append(sqlStr)
     sqlList.append("alter table " + tableList[0] + " auto_increment = 1") 
     dbConnect.dbSetting(dbInfo, sqlList)
 

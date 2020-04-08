@@ -25,8 +25,7 @@ def getTestData():
         ('firstLogin', 2),
         ('secondLogin', 2),
         ('accToken_Wrong', 4),
-        ('idToken_Wrong', 4),
-        ('expired', 4)
+        ('idToken_Wrong', 4)
     ]
     return testData
 
@@ -42,44 +41,47 @@ class TestLineLogin():
     @pytest.mark.parametrize("condition, expected", getTestData())
     def testlineFlow(self, condition, expected):
         url = '/api/v2/3rdParty/line/verify'
+        print('condition=%s'%condition)
         if condition == 'firstLogin':
             idToken, accessToken = (lineLogin.line_login())
             body = {
                 'accessToken': accessToken,
                 'idToken': idToken
             }
-            self.auth.extend([idToken, accessToken])
+            self.auth.append({'idToken': idToken, 'accessToken': accessToken})
         elif condition == 'secondLogin':
             idToken, accessToken = (lineLogin.line_login())
             body = {
                 'accessToken': accessToken,
                 'idToken': idToken
             }
-            self.auth.extend([idToken, accessToken])
+            self.auth.append({'idToken': idToken, 'accessToken': accessToken})
         elif condition == 'accToken_Wrong':
             body = {
                 'accessToken': 'sUpdewDer123Oi',
-                'idToken': idToken[1]
+                'idToken': self.auth[1]['idToken']
             }
         elif condition == 'idToken_Wrong':
             body = {
-                'accessToken': self.auth[1],
+                'accessToken': self.auth[1]['accessToken'],
                 'idToken': 'aBcdoeiDp'
             }
         elif condition == 'expired':
             body = {
-                'accessToken': self.auth[0],
-                'idToken': idToken[0]
+                'accessToken': self.auth[0]['accessToken'],
+                'idToken': self.auth[0]['idToken']
             }
         res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body)
-        assert res.status_code == expected
+        assert res.status_code // 100 == expected
         if condition == 'firstLogin':
             restext = json.loads(res.text)
             assert restext['data']['isNew'] == 1
             assert 'nonce' in restext['data']
             assert 'token' in restext['data']
             assert 'idToken' in restext['data']
+            time.sleep(10)
         if condition == 'secondLogin':
+            restext = json.loads(res.text)
             assert restext['data']['isNew'] == 0
             assert 'nonce' in restext['data']
             assert 'token' in restext['data']

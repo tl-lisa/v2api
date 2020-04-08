@@ -37,27 +37,27 @@ def getTestData(testName):
         #PWD是一個list或字串，用來模擬多次行為 
         return([
                 (False, ['lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev'], 'abc123', [2, 2, 2, 4]),
-                (False, ['tl-lisa@truelove', '@gmail.com', 'tlqa20200313@.com'], 'abc123', [4, 4, 4]),
-                (False, 'lisa@truelovelive.dev', ['1234', '123456789012345678901', '123嗨', '123!4', '12 34', '1234😄', '!@！1'], [4, 4, 4, 4, 4, 4]),
+                (False, ['@gmail.com', 'tl-lisa@truelove', 'tlqa20200313@.com'], 'abc123', [4, 4, 4]),
+                (False, 'lisa@truelovelive.dev', ['1234', '123456789012345678901', '123嗨', '123!4', '12 34', '1234😄', '!@！1'], [4, 4, 4, 4, 4, 4, 4]),
                 (True, ['lisa@truelovelive.dev', 'lisa@truelovelive.dev'], 'abc123', [2, 4])
             ])  
     elif testName == 'mailCreateTime':
         #更改前2筆資料的create_at時間
         return([
-                (['lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa233152@gmail.com', 'lisa6335@hotmail.com'], 
+                (['lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev'], 
                 'abc123',
                 [2, 2, 2, 2, 2, 4])
             ])
     elif testName == 'activeCode':
         return([
-            (True, 'tokenWrong', 4),
-            (False, 'codeWrong', 4),
-            (False, 'expired', 4),
-            (False, 'wihtoutPushToken', 2),
-            (True, '', 2),
-            (True, '', 4)
+            ('tokenWrong', 4),
+            ('codeWrong', 4),
+            ('expired', 4),
+            ('wihtoutPushToken', 2),
+            ('success', 2)
         ])
 
+#@pytest.mark.skip()
 class TestSendEmail():
     head = {'Content-Type': 'application/json'}
 
@@ -74,8 +74,7 @@ class TestSendEmail():
         } 
         pprint(body)
         api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
-
-    @pytest.mark.skip()
+    #@pytest.mark.skip()
     @pytest.mark.parametrize("regEmail, PWD, expected", getTestData('mailCreateTime'))
     def testMailCreateTime(self, regEmail, PWD, expected):
         url = '/api/v2/identity/register/email/send'
@@ -86,9 +85,8 @@ class TestSendEmail():
                 'email': regEmail[i],
                 'password': PWD
             }
+            print(body)
             res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body) 
-            restext = json.loads(res.text)
-            pprint(restext)
             assert res.status_code // 100 == expected[i]
             if i == 0:
                 createTime = (datetime.today() - timedelta(days=8+datetime.today().weekday()) - timedelta(hours=8)).strftime('%Y-%m-%d 16:00:00')
@@ -102,7 +100,7 @@ class TestSendEmail():
                 sqlList = ["update identity_email_register_history set created_at = '" + createTime + "' where id = " + str(result[0][0])]
                 dbConnect.dbSetting(test_parameter['db'], sqlList)
 
-    #@pytest.mark.skip()
+   
     @pytest.mark.parametrize("isRegister, regEmail, PWD, expected", getTestData('parameteType'))
     def testSend(self, isRegister, regEmail, PWD, expected):
         initdata.clearIdentityData(test_parameter['db'])
@@ -114,8 +112,6 @@ class TestSendEmail():
                     'password': PWD
                 }
                 res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
-                restext = json.loads(res.text)
-                pprint(restext)
                 assert res.status_code // 100 == expected[i]
                 if isRegister and (res.status_code // 100 ==  2):
                     self.runActiveCode(json.loads(res.text))
@@ -127,8 +123,6 @@ class TestSendEmail():
                     'password': PWD[i]
                 }
                 res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)    
-                restext = json.loads(res.text)
-                pprint(restext)
                 assert res.status_code // 100 == expected[i]
 
 '''
@@ -139,11 +133,11 @@ active code錯誤
 temptoken與active code皆正確
 該mail已被註冊
 '''
-@pytest.mark.skip()
+
+#@pytest.mark.skip()
 class TestActivateCode():
     head = {'Content-Type': 'application/json'}
-    tempToken = 0
-    def setup_class(self):
+    def setup_method(self):
         initdata.clearIdentityData(test_parameter['db'])
 
     def getActiveCode(self):
@@ -153,22 +147,21 @@ class TestActivateCode():
                     'password': '12345',
                     'pushToken': 'emailRegrjhjayegrkldfkhgdkfasd'
                 }
-        res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)  
-        restext = json.loads(res.text)     
-        pprint(restext)
-        self.tempToken = restext['data']['tmpToken']
-        sqlStr = "select activate_code from identity_email_register_history where token = '" + self.tempToken + "'"
+        res = api.apiFunction(test_parameter['prefix'],{'Content-Type': 'application/json'}, url, 'post', body)  
+        restext = json.loads(res.text)    
+        pprint(restext) 
+        tempToken = restext['data']['tmpToken']
+        sqlStr = "select activate_code from identity_email_register_history where token = '" + tempToken + "'"
         result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
         actCode = result[0][0]
-        return actCode
+        return tempToken, actCode
 
-    @pytest.mark.parametrize("isSendMail, condition, expected", getTestData('activeCode'))
-    def testRegisterToActive(self, isSendMail, condition, expected):
+    @pytest.mark.parametrize("condition, expected", getTestData('activeCode'))
+    def testRegisterToActive(self, condition, expected):
         url = '/api/v2/identity/register/email/activate'
-        if isSendMail:
-            actCode = self.getActiveCode()
+        tempToken, actCode = self.getActiveCode() 
         body = {
-             "tmpToken": self.tempToken,
+             "tmpToken": tempToken,
              "activateCode": actCode,
              "pushToken": "emailRegrjhjayegrkldfkhgdkfasd"
             }
@@ -180,10 +173,10 @@ class TestActivateCode():
             body["pushToken"] = ""
         elif condition == 'expired':
             sqlStr = "select max(id) from identity_email_register_history"
-            result = dbConnect.dbQuery(test_parameter['prefix'], sqlStr)
+            result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
             sqlList = ["update identity_email_register_history set expires_in = 0  where id = " + str(result[0][0])]
             dbConnect.dbSetting(test_parameter['db'], sqlList)
-        pprint(body)
+        pprint(condition)
         res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
         assert res.status_code // 100 == expected
         if res.status_code // 100 == 2:

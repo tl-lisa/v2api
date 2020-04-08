@@ -32,14 +32,14 @@ def teardown_module():
 def getTestData():
     #token, nonce, idInfo, role, experience, expected
     testData = [
-        ('backend_token', 'backend_nonce', idList, 4, 1502181, 2),
-        #('backend_token', 'backend_nonce', idList, 5, 1502181, 2),
-        #('backend_token', 'backend_nonce', idList, 1, 1502181, 2),
-        #('backend_token', 'backend_nonce', idList, 10, 1502181, 2),
-        #('liveController1_token', 'liveController1_nonce', idList, 4, 1502182, 2),
-        #('broadcaster_token', 'broadcaster_nonce', idList, 5, 1502182, 4),
-        #('err_token', 'err_nonce', idList, 5, 1502182, 4),
-        ('backend_token', 'backend_nonce', '774ab73f-6aa6-4ed1-a991-609d7db7d1a3', 5, 1502182, 4)
+        ('backend_token', 'backend_nonce', idList, 4, 4577454, 2),
+        ('backend_token', 'backend_nonce', idList, 5, 4577454, 2),
+        ('backend_token', 'backend_nonce', idList, 1, 4577454, 2),
+        ('backend_token', 'backend_nonce', idList, 10, 4577454, 2),
+        ('liveController1_token', 'liveController1_nonce', idList, 4, 4577455, 2),
+        ('broadcaster_token', 'broadcaster_nonce', idList, 5, 4577455, 4),
+        ('err_token', 'err_nonce', idList, 5, 4577455, 4),
+        ('backend_token', 'backend_nonce', '774ab73f-6aa6-4ed1-a991-609d7db7d1a3', 5, 4577455, 4)
     ]
     return testData
 
@@ -65,12 +65,15 @@ class TestChangeRole():
         url = '/api/v2/backend/user/role'
         body = {'ids': idInfo, 'role': role}
         res = api.apiFunction(test_parameter['prefix'], header, url, 'patch', body)
-        sqlStr = "select count(*) from identity_tag_association ita where ita.identity_id = '" + idInfo[0] if type(idInfo) == list else idInfo + "' and ita.tag_id = 6"
+        if type(idInfo) == list:
+            id = idInfo[0] 
+        else:
+            id = idInfo
+        sqlStr = "select count(*) from identity_tag_association where identity_id = '" + id + "' and tag_id = 6"
         result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+        print('dbcount=%d'%result[0][0])
         assert res.status_code // 100 == expected
-        '''
-        if role  == 4 and experience < 1502182:
+        if role  == 4 and experience < 4577455:
             assert result[0][0] == 1
         else:
             assert result[0][0] == 0
-        '''

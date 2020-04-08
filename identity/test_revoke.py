@@ -14,27 +14,32 @@ from pprint import pprint
 env = 'testing'
 test_parameter = {}
 
+def emailReg(emailAddr, PWD):
+    url = '/api/v2/identity/register/email/send'
+    body = {
+                'email': emailAddr,
+                'password': PWD
+            }
+    res = api.apiFunction(test_parameter['prefix'], {'Content-Type': 'application/json'}, url, 'post', body)   
+    restext = json.loads(res.text)     
+    tempToken = restext['data']['tmpToken']
+    sqlStr = "select activate_code from identity_email_register_history where token = '" + tempToken + "'"
+    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+    actCode = result[0][0]
+    url = '/api/v2/identity/register/email/activate'
+    body = {
+            "tmpToken": tempToken,
+            "activateCode": actCode,
+            "pushToken": "dshfklkrxkeiyegrkldfkhgdkfasd"
+        }
+    api.apiFunction(test_parameter['prefix'], {'Content-Type': 'application/json'}, url, 'post', body) 
+
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
-    sqlList = []
-    tableList = ['identity_third_party', 'identity_line']
-    sqlStr = 'select identity_id from identity_third_party'
-    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
-    for i in tableList:
-        sqlStr = "TRUNCATE TABLE " + i
-        sqlList.append(sqlStr)       
-    for i in range(len(result[0])):
-        if i == 0:
-            sqlStr = "delete from identity where id in ('"
-        sqlStr += result[0][i] 
-        if i == len(result[0]):
-            sqlStr += "')"
-        else:
-            sqlStr += "', '"
-    sqlList.append(sqlStr)
-    sqlList.append("alter table " + tableList[0] + " auto_increment = 1") 
-    dbConnect.dbSetting(test_parameter['db'], sqlList)
+    initdata.clearIdentityData(test_parameter['db'])
+    emailReg('lisa@gmail.com', '123456')
+
 
 def getTestData():
     testData = [
@@ -108,19 +113,23 @@ class TestRevoke():
             self.lineAuth.extend([token, nonce, idToken])
         elif condition == 'tokenWrong':
             token = '1235'
+            nonce = self.lineAuth[1]
+            idToken = self.lineAuth[1]
         elif condition == 'nonceWrong':
             token = self.lineAuth[0]
             nonce = '1234'
+            idToken = self.lineAuth[0]
         elif condition == 'bindEmail':
             bindMail(self.lineAuth)
             token = self.lineAuth[0]
             nonce = self.lineAuth[1]
+            idToken = self.lineAuth[1]
         elif condition == 'accountLogin':
-            token, nonce, idToken = loginV2('track0005', '123456')
+            token, nonce, idToken = loginV2('track0012', '123456')
         elif condition == 'emailLogin':
             token, nonce, idToken = loginV2('lisa@gmail.com', '123456')
         head['X-Auth-Token'] = token
         head['X-Auth-Nonce'] = nonce
         head['Authorization'] = idToken
         res =  api.apiFunction(test_parameter['prefix'], head, url, 'delete', None)
-        assert res.status_code == excepted
+        assert res.status_code // 100 == excepted

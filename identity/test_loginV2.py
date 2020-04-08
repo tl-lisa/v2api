@@ -15,7 +15,6 @@ from pprint import pprint
 
 env = 'testing'
 test_parameter = {}
-#header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 
 def emailReg(emailAddr, PWD):
     url = '/api/v2/identity/register/email/send'
@@ -40,21 +39,20 @@ def emailReg(emailAddr, PWD):
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
+    initdata.clearIdentityData(test_parameter['db'])
     emailReg('lisa@gmail.com', '123456')
 
-
-def teardown_module():
+def teardown_modules():
     head = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': test_parameter['backend_token'], 'X-Auth-Nonce': test_parameter['backend_nonce']}
     id = api.search_user(test_parameter['prefix'], 'track0005', head)
     api.change_user_mode(test_parameter['prefix'], id, '1', head)
-    initdata.clearIdentityData(test_parameter['db'])
 
 
 def getTestData():
     #isSuspended, account, pwd, pushToken, expected
     TestData = [
-        (False, 'track0005', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 2),
-        (False, 'lisa@gmail.com', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 2),
+        (False, 'track0005', '123456', '0987654321jayegrkldfkhgdkfasd', 2),
+        (False, 'lisa@gmail.com', '123456', '1234567890jayegrkldfkhgdkfasd', 2),
         (False, 'lisa', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 4),
         (False, 'track0005', '123', 'dshfklkrjhjayegrkldfkhgdkfasd', 4),
         (False, '', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 4,),
@@ -81,7 +79,7 @@ class TestV2Login():
     @pytest.mark.parametrize("isSuspended, account, pwd, pushToken, expected", getTestData())
     def testLogin(self, isSuspended, account, pwd, pushToken, expected):
         head = {'Content-Type': 'application/json'}
-        url = test_parameter['prefix'] + '/api/v2/identity/auth/login'
+        url = '/api/v2/identity/auth/login'
         body = {
             "account": account,
             "password": pwd,
@@ -93,7 +91,7 @@ class TestV2Login():
             sqlStr = "select push_token from identity where login_id = '" + account + "'"
             result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
             assert len(result[0][0]) > 0
-        assert res.status_code == expected
+        assert res.status_code // 100 == expected
         if expected == 2:
             url = '/api/v2/identity/myInfo'
             restext = json.loads(res.text)
@@ -102,6 +100,7 @@ class TestV2Login():
             head['Authorization'] = restext['data']['idToken']
             res = api.apiFunction(test_parameter['prefix'], head, url, 'get', None)
             restext = json.loads(res.text)
+            #pprint(restext)
             assert restext['data']['loginId'] == account
         
 

@@ -18,7 +18,7 @@ def create_auth_url():
     url = "https://access.line.me/oauth2/v2.1/authorize"
     data = {}
     data['response_type'] = 'code'
-    data['client_id'] = settings.client_id
+    data['client_id'] = settings.line_client_id
     data['redirect_uri'] = settings.callback_URL
     data['state'] = 'test'
     data['scope'] = 'openid profile'
@@ -26,18 +26,18 @@ def create_auth_url():
     #print(res)
     return res
 
-def get_toke(auth_code):
+def get_token(auth_code):
     url = 'https://api.line.me/oauth2/v2.1/token'
     header = {'Content-Type': 'application/x-www-form-urlencoded'}
     body = {'grant_type': 'authorization_code',
             'code': auth_code,
             'redirect_uri': settings.callback_URL,
-            'client_id': settings.client_id,
-            'client_secret': settings.client_secret}
+            'client_id': settings.line_client_id,
+            'client_secret': settings.line_secret}
     #print(body)
     res = requests.post(url, headers=header, data=body)
     restext = json.loads(res.text)
-    print(restext)
+    #print(restext)
     idToken = restext['id_token']
     accessToken = restext['access_token']
     return (idToken, accessToken)
@@ -52,4 +52,4 @@ def line_login():
     code_url = Browser.current_url
     auth_code = code_url[code_url.find('=') + 1 :code_url.find('&')]
     Browser.quit()
-    return (get_toke(auth_code))
+    return (get_token(auth_code))

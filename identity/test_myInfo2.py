@@ -51,6 +51,7 @@ def loginByLine():
     }
     res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body)
     restext = json.loads(res.text)
+    print(restext)
     return(restext['data']['token'], restext['data']['nonce'], restext['data']['idToken'])    
 
 def loginByAccount():
@@ -77,10 +78,11 @@ def getData(testName):
     if testName == 'updateInfo':
         #token, nonce, keyInfo, valueInfo, expected
         testData = [
-            ('user_token', 'user_nonce', 'nickname', '  ', 4),
+            ('user_token', 'user_nonce', 'nickname', '', 4),
+            ('user_token', 'user_nonce', 'nickname', '     ', 2),
             ('user_token', 'user_nonce', 'nickname', '🥰5566　-🥰', 2),
             ('user_token', 'user_nonce', 'nickname', 'AB歡樂派！', 2),
-            ('user_token', 'user_nonce', 'sex', '2', 2),
+            ('user_token', 'user_nonce', 'sex', 2, 2),
             ('user_token', 'user_nonce', 'isPublicSexInfo', False, 2),
             ('user_token', 'user_nonce', 'description', '哈， I am richman!！！😂 😂 ', 2),
             ('user_token', 'user_nonce', 'description', '', 2),
@@ -98,7 +100,7 @@ def getData(testName):
 '''
 ・檢測token/nonce取得對應帳號
 '''
-@pytest.mark.skip()
+#@pytest.mark.skip()
 class TestGetMyInfo():
     @pytest.mark.parametrize("token, nonce, account, role, expected", getData('getInfo'))
     def testGetInfo(self, token, nonce, account, role, expected):
@@ -122,9 +124,8 @@ class TestGetMyInfo():
     3rdPartyInfo
 ・舊有帳號可以修改資料，若是空白則修改成空白
 '''
-
+#@pytest.mark.skip()
 class TestUpdateMyinfo():
-    @pytest.mark.skip()
     @pytest.mark.parametrize("condition, expected", getData('newUser'))
     def testNewAccount(self, condition, expected):
         url = '/api/v2/identity/myInfo'
@@ -147,8 +148,9 @@ class TestUpdateMyinfo():
             assert restext['verifiedEmail'] == 'tl-lisa@truelove.dev'
         elif condition == 'loginByLine':
             assert restext['3rdPartySource'] == 'line'
-            print(restext['3rdPartyInfo'])
-    #@pytest.mark.skip()
+            assert restext['isPasswordSet'] == False
+            #print(restext['3rdPartyInfo'])
+
     @pytest.mark.parametrize("token, nonce, keyInfo, valueInfo, expected", getData('updateInfo'))
     def testUpdateInfo(self, token, nonce, keyInfo, valueInfo, expected):
         body = {'nickname': '123', 'sex': 1, 'isPublicSexInfo': True, 'description': 'haha', 'birthday': int(time.time() - 5000)}
@@ -164,5 +166,3 @@ class TestUpdateMyinfo():
         assert res.status_code // 100 == expected
         if expected == 2:
             assert restext['data'][keyInfo] == valueInfo
-            if keyInfo == 'isPasswordSet' and valueInfo == True:
-                assert restext['data']['sex'] is None
