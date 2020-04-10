@@ -44,7 +44,7 @@ def setup_module():
 
 def teardown_modules():
     head = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': test_parameter['backend_token'], 'X-Auth-Nonce': test_parameter['backend_nonce']}
-    id = api.search_user(test_parameter['prefix'], 'track0005', head)
+    id = api.search_user(test_parameter['prefix'], 'track0075', head)
     api.change_user_mode(test_parameter['prefix'], id, '1', head)
 
 
@@ -57,7 +57,7 @@ def getTestData():
         (False, 'track0005', '123', 'dshfklkrjhjayegrkldfkhgdkfasd', 4),
         (False, '', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 4,),
         (False, 'track0005', '123456', '', 2),
-        (True, 'track0005', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 4)
+        (True, 'track0075', '123456', 'dshfklkrjhjayegrkldfkhgdkfasd', 4)
     ]
     return (TestData)
 
@@ -90,6 +90,7 @@ class TestV2Login():
         if pushToken == '':
             sqlStr = "select push_token from identity where login_id = '" + account + "'"
             result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+            print(result[0][0])
             assert len(result[0][0]) > 0
         assert res.status_code // 100 == expected
         if expected == 2:

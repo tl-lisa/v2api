@@ -23,7 +23,7 @@ def setup_module():
 def regByMail():
     url = '/api/v2/identity/register/email/send'
     body = {
-                'email': 'tl-lisa@truelove.dev',
+                'email': 'tl-lisa@truelovelive.dev',
                 'password': '12345'
             }
     res = api.apiFunction(test_parameter['prefix'], {'Content-Type': 'application/json'}, url, 'post', body)   
@@ -51,7 +51,6 @@ def loginByLine():
     }
     res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body)
     restext = json.loads(res.text)
-    print(restext)
     return(restext['data']['token'], restext['data']['nonce'], restext['data']['idToken'])    
 
 def loginByAccount():
@@ -142,15 +141,15 @@ class TestUpdateMyinfo():
         time.sleep(2)
         res = api.apiFunction(test_parameter['prefix'], header, url, 'get', None)
         restext = json.loads(res.text)
-        pprint(restext)
         if condition == 'regByMail':
-            assert restext['isPasswordSet'] == True
-            assert restext['verifiedEmail'] == 'tl-lisa@truelove.dev'
+            assert restext['data']['isPasswordSet'] == True
+            assert restext['data']['verifiedEmail'] == 'tl-lisa@truelovelive.dev'
         elif condition == 'loginByLine':
-            assert restext['3rdPartySource'] == 'line'
-            assert restext['isPasswordSet'] == False
+            assert restext['data']['3rdPartySource'] == 'line'
+            assert restext['data']['isPasswordSet'] == False
             #print(restext['3rdPartyInfo'])
 
+    #@pytest.mark.skip()
     @pytest.mark.parametrize("token, nonce, keyInfo, valueInfo, expected", getData('updateInfo'))
     def testUpdateInfo(self, token, nonce, keyInfo, valueInfo, expected):
         body = {'nickname': '123', 'sex': 1, 'isPublicSexInfo': True, 'description': 'haha', 'birthday': int(time.time() - 5000)}
@@ -160,9 +159,9 @@ class TestUpdateMyinfo():
         body[keyInfo] = valueInfo
         #print(body)
         res = api.apiFunction(test_parameter['prefix'], header, url, 'put', body)
+        assert res.status_code // 100 == expected
         time.sleep(5)
         res = api.apiFunction(test_parameter['prefix'], header, url, 'get', body)
         restext = json.loads(res.text)
-        assert res.status_code // 100 == expected
         if expected == 2:
             assert restext['data'][keyInfo] == valueInfo

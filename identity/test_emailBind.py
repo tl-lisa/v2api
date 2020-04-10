@@ -17,32 +17,36 @@ env = 'testing'
 test_parameter = {}
 mailList = ['lisa@truelovelivelive.dev', 'tlqa20200313@gmail.com', 'lisa233152@gmail.com']
 
-def clearData():
-    sqlList = []
-    tableList = ['identity_email_bind_history', 'identity_profile']
-    sqlStr = 'select identity_id from identity_profile'
-    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
-    print(len(result))
-    for i in tableList:
-        sqlStr = "TRUNCATE TABLE " + i
-        sqlList.append(sqlStr)       
-    for i in range(len(result)):
-        for j in range(len(result[i])):
-            if j == 0:
-                sqlStr = "delete from identity where id in ('"
-            sqlStr += result[i][j] 
-            if len(result[i]) - j == 1:
-                sqlStr += "')"
-            else:
-                sqlStr += "', '"
-        sqlList.append(sqlStr)
-    sqlList.append("alter table " + tableList[0] + " auto_increment = 1") 
-    dbConnect.dbSetting(test_parameter['db'], sqlList)
-
 def setup_module():
     initdata.set_test_data(env, test_parameter)
-    initdata.clearIdentityData(test_parameter['db'])
 
+def createAccount(account):
+    header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
+    header['X-Auth-Token'] = test_parameter['backend_token']
+    header['X-Auth-Nonce'] = test_parameter['backend_nonce']           
+    idlist = []
+    api.register(test_parameter['prefix'], account, header)
+    uid = api.search_user(test_parameter['prefix'], account, header)
+    print('uid=%s'%uid)
+    api.change_user_mode(test_parameter['prefix'], uid, -2, header)
+    api.change_user_mode(test_parameter['prefix'], uid, 1, header)
+    idlist.append(uid)
+    api.change_roles(test_parameter['prefix'], header, idlist, 5)
+    return  
+
+def init_function(account):
+    initdata.clearIdentityData(test_parameter['db'])
+    createAccount(account)
+    url = '/api/v2/identity/auth/login'
+    body = {
+        "account": "track0052",
+        "password": "123456",
+        "pushToken":"dshfklkrjhjayegrkldfkhgdkfasd"
+    }
+    res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body) 
+    restext = json.loads(res.text)
+    return (restext['data']['token'], restext['data']['nonce'], restext['data']['idToken'])
+ 
 
 '''
 email註冊：
@@ -74,35 +78,21 @@ def getTestData(testName):
     elif testName == 'activeCode':
         #"isSendMail, condition, bindMail, PWD, expected"
         return([
-            #(True, 'sourceWrong', 'lisa@truelovelive.dev', '1234a', 4),
+            (True, 'sourceWrong', 'lisa@truelovelive.dev', '1234a', 4),
             (True, 'codeWrong', 'lisa@truelovelive.dev', '1234a', 4),
             (False, 'codeExpired', 'lisa@truelovelive.dev', '1234a', 4),
             (False, 'mailDismatch', 'lisa@truelovelive.dev', '1234a',4),
-            (False, '', 'lisa@truelovelive.dev',  ['1234', '123456789012345678901', '123嗨', '123!4', '1234 ', '1234😄', ''], 4)
-           # (True, '', 'lisa@truelovelive.dev', '123456', 2)
+            (False, '', 'lisa@truelovelive.dev',  ['1234', '123456789012345678901', '123嗨', '123!4', '1234 ', '1234😄', ''], 4),
+            (True, '', 'lisa@truelovelive.dev', '1234a', 2)
         ])
 
 
 #@pytest.mark.skip()
 class TestSendEmail():
     head = {'Content-Type': 'application/json', 'X-Auth-Token': '', 'X-Auth-Nonce': '', 'Authorization': ''}
+
     def setup_class(self):
-        '''
-        url = #'/api/v2/identity/auth/login'
-        body = {
-            "account": "track0050",
-            "password": "123456",
-            "pushToken":"dshfklkrjhjayegrkldfkhgdkfasd"
-        }
-        
-        res =  api.apiFunction(test_parameter['prefix'], {}, url, 'post', body) 
-        restext = json.loads(res.text)
-        self.head['X-Auth-Token'] = restext['data']['token']
-        self.head['X-Auth-Nonce'] = restext['data']['nonce']
-        self.head['Authorization'] = restext['data']['idToken']
-        '''
-        self.head['X-Auth-Token'] = test_parameter['user_token']
-        self.head['X-Auth-Nonce'] = test_parameter['user_nonce']
+        self.head['X-Auth-Token'], self.head['X-Auth-Nonce'], self.head['Authorization'] = init_function('track0052')
 
     def runActiveCode(self, bindMail):
         sqlStr = "select activate_code from identity_email_bind_history where id = (select max(id) from identity_email_bind_history)"
@@ -141,11 +131,11 @@ class TestSendEmail():
                 result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
                 sqlList = ["update identity_email_bind_history set created_at = '" + createTime + "' where id = " + str(result[0][0])]
                 dbConnect.dbSetting(test_parameter['db'], sqlList)
-            time.sleep(20)
-
+            
+    #@pytest.mark.skip()
     @pytest.mark.parametrize("isBinded, bindEmail, expected", getTestData('parameteType'))
     def testSend(self, isBinded, bindEmail, expected):
-        initdata.clearIdentityData(test_parameter['db'])
+        self.head['X-Auth-Token'], self.head['X-Auth-Nonce'], self.head['Authorization'] = init_function('track0052')
         url = '/api/v2/identity/binding/email/send'
         for i in range(len(bindEmail)):
             body = {
@@ -157,7 +147,7 @@ class TestSendEmail():
             assert res.status_code // 100 == expected[i]
             if isBinded and (res.status_code // 100 ==  2):
                 self.runActiveCode(bindEmail[i])
-            time.sleep(20)
+            
             
 '''
 啟用active code:
@@ -173,10 +163,11 @@ class TestSendEmail():
 class TestActivateCode():
     head = {'Content-Type': 'application/json', 'X-Auth-Token': '', 'X-Auth-Nonce': '', 'Authorization': ''}
     def setup_class(self):
-        '''
+        initdata.clearIdentityData(test_parameter['db'])
+        createAccount('track0099')
         url = '/api/v2/identity/auth/login'
         body = {
-            "account": "track0050",
+            "account": "track0099",
             "password": "123456",
             "pushToken":"dshfklkrjhjayegrkldfkhgdkfasd"
         } 
@@ -185,10 +176,7 @@ class TestActivateCode():
         self.head['X-Auth-Token'] = restext['data']['token']
         self.head['X-Auth-Nonce'] = restext['data']['nonce']
         self.head['Authorization'] = restext['data']['idToken']
-        '''
-        self.head['X-Auth-Token'] = test_parameter['user_token']
-        self.head['X-Auth-Nonce'] = test_parameter['user_nonce']
-        initdata.clearIdentityData(test_parameter['db'])
+    
 
     def getActiveCode(self, bindMail):
         url = '/api/v2/identity/binding/email/send'
@@ -209,7 +197,6 @@ class TestActivateCode():
         url = '/api/v2/identity/binding/email/activate'
         if isSendMail:
             actCode = self.getActiveCode(bindMail)
-            time.sleep(20)
         body = {
             "source": "advance",
             "email": bindMail,

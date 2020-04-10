@@ -335,14 +335,14 @@ def add_photo_comment(prefix, header1, pid, comment):
 
 def apiFunction(prefix, head, apiName, way, body):
     url = prefix + apiName  
-    #print('url = %s, method= %s'% (url, way))   
+    print(head)
+    print('url = %s, method= %s'% (url, way))   
     if way in ('get', 'delete'):
         if 'Content-Type' in head.keys():
             del head['Content-Type']
     else:
         if 'Content-Type' not in head.keys():
             head['Content-Type'] = 'application/json'
-    #print(head)
     print(body)
     if way == 'post':
         res1 = requests.post(url, headers=head, json=body)

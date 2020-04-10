@@ -88,13 +88,15 @@ def clearIdentityData(dbInfo):
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)       
     sqlList.append(sqlStr)
-    delList = ['identity_role', 'remain_points', 'user_settings', 'user_experience', 'identity']
+    delList = ['identity_role', 'remain_points', 'user_settings', 'user_experience', 'announcement_v2_identity_association', 'identity']
     for k in delList:
         for i in range(len(result)):
             for j in range(len(result[i])):
                 if j == 0:
                     if k == 'identity':
                         sqlStr = "delete from " + k + " where id in ('"
+                    elif k == 'announcement_v2_identity_association':
+                        sqlStr = "delete from " + k + " where receiver in ('"
                     else:
                         sqlStr = "delete from " + k + " where identity_id in ('"
                 sqlStr += result[i][j] 
