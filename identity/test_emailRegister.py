@@ -10,12 +10,10 @@ from ..assistence import dbConnect
 from ..assistence import initdata
 from ..assistence import api
 from pprint import pprint
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
+
 
 env = 'testing'
 test_parameter = {}
-mailList = ['lisa@truelovelive.dev', 'tlqa20200313@gmail.com', 'lisa233152@gmail.com']
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
@@ -74,6 +72,7 @@ class TestSendEmail():
         } 
         pprint(body)
         api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
+        
     #@pytest.mark.skip()
     @pytest.mark.parametrize("regEmail, PWD, expected", getTestData('mailCreateTime'))
     def testMailCreateTime(self, regEmail, PWD, expected):
