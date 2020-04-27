@@ -1,7 +1,11 @@
 import json
 import time
+import sys
 from . import api
 from . import dbConnect
+
+sys.dont_write_bytecode = True
+
 
 def set_test_data(env, test_parameter):    
     if env == 'testing':
@@ -78,6 +82,14 @@ def set_test_data(env, test_parameter):
     api.change_roles(test_parameter['prefix'], header, changelist, '4') #轉回直播主
     return
 
+def initIdList(prefix, token, nonce, accountList, idList):
+    header  = {}
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
+    for i in accountList:
+        idList.append(api.search_user(prefix, i, header))
+    return 
+    
 def clearIdentityData(dbInfo):
     sqlList = []
     tableList = ['identity_email_register_history', 'identity_email_bind_history', 'identity_third_party', 'identity_line', 'identity_profile']
@@ -106,6 +118,46 @@ def clearIdentityData(dbInfo):
             sqlList.append(sqlStr)
     sqlList.append("alter table " + tableList[0] + " auto_increment = 1") 
     dbConnect.dbSetting(dbInfo, sqlList)
+
+def clearFansInfo(db):
+    sqlList = []       
+    truncateList = ['user_follows', 'fans', 'user_blocks', 'fans_history', 'photo_report', 'photo_comment', 'photo_like', 'notification_v2_identity_association']
+    for i in truncateList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)
+    sqlList.append('delete from notification_v2')
+    sqlList.append('delete from photo_post')
+    dbConnect.dbSetting(db, sqlList)    
+
+def clearIMInfo(db):
+    sqlList = []
+    truncateList = ['instant_message_point_history', 'instant_message_video', 'instant_message_image', 'instant_message_text']
+    for i in truncateList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)
+    deleteList = ['instant_message', 'dialog_member', 'dialog', 'quota_log', 'point_consumption_history']
+    for tableName in deleteList:
+        sqlStr = 'delete from ' + tableName
+        sqlList.append(sqlStr)       
+    for tableName in deleteList:
+        sqlList.append("alter table " + tableName + " auto_increment = 1")
+    dbConnect.dbSetting(db, sqlList)
+    
+
+def clearPhoto(db):
+    sqlList = []
+    truncateList = ['post_gift_history', 'photo_report', 'photo_comment', 'photo_like']
+    for i in truncateList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)
+    deleteList = ['quota_log', 'post_gift_history', 'point_consumption_history', 'photo_post']
+    for tableName in deleteList:
+        sqlStr = 'delete from ' + tableName
+        sqlList.append(sqlStr)       
+    for tableName in deleteList:
+        sqlList.append("alter table " + tableName + " auto_increment = 1")
+    dbConnect.dbSetting(db, sqlList)
+
 
 def resetData(dbenv, live_master_id):
     sqlList = []

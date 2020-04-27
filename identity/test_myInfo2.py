@@ -112,6 +112,9 @@ class TestGetMyInfo():
             restext = json.loads(res.text)
             assert restext['data']['roles'][0]['id'] == role
             assert restext['data']['loginId'] == test_parameter[account]
+            assert len(restext['data']['trueLoveId']) > 0
+            assert len(restext['data']['profilePicture']) > 0
+            
 
 '''
 ・token/nonce判斷

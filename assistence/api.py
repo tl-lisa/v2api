@@ -88,7 +88,7 @@ def change_roles(prefix, header, bid, rtype):
     #5:一般用戶；4:直播主
     url = prefix + '/api/v1/backend/identity/roles'
     body = {'identityId': bid, 'roleType': rtype}
-    #print(body)
+    print(body)
     res = requests.put(url, headers=header, json=body)
     if res.status_code != 200:
         print(json.loads(res.text))
@@ -267,7 +267,7 @@ def get_photo_list(prefix, header1, master_id, inum, pnum):
 
 
 def get_comment_list(prefix, header1, post_id, inum, pnum):
-    url = prefix + '/api/v2/liveMaster/photoPost/' + post_id + '/comment?item=' + inum + '&page=' + pnum
+    url = prefix + '/api/v2/liveMaster/photoPost/' + post_id + '/comment?item=' + str(inum) + '&page=' + str(pnum)
     res = requests.get(url, headers=header1)
     return(res)
 
@@ -310,7 +310,7 @@ def get_livecontroller(prefix, header1, mid, inum, pnum):
 
 def add_block_user(prefix, header1, body):
     url = prefix + '/api/v2/liveMaster/blockUser'
-    print(body)
+    #print(body)
     res = requests.post(url, headers=header1, json=body)
     return(res)
 
@@ -335,15 +335,15 @@ def add_photo_comment(prefix, header1, pid, comment):
 
 def apiFunction(prefix, head, apiName, way, body):
     url = prefix + apiName  
-    print(head)
-    print('url = %s, method= %s'% (url, way))   
+    #print(head)
+    #print('url = %s, method= %s'% (url, way))   
     if way in ('get', 'delete'):
         if 'Content-Type' in head.keys():
             del head['Content-Type']
     else:
         if 'Content-Type' not in head.keys():
             head['Content-Type'] = 'application/json'
-    print(body)
+    #print(body)
     if way == 'post':
         res1 = requests.post(url, headers=head, json=body)
     elif way == 'put':
@@ -355,5 +355,5 @@ def apiFunction(prefix, head, apiName, way, body):
     elif way == 'patch':
         res1 = requests.patch(url, headers=head, json=body)
     #print('statusCode=%d'%res1.status_code)
-    pprint(json.loads(res1.text))
+    #pprint(json.loads(res1.text))
     return res1 

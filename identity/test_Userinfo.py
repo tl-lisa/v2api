@@ -2,6 +2,7 @@ import json
 import requests
 import time
 import string
+import pytest
 from ..assistence import api
 from ..assistence import initdata
 from ..assistence import dbConnect
@@ -22,59 +23,30 @@ def setup_module():
     idList.append(api.search_user(test_parameter['prefix'], test_parameter['backend_acc'], header))
     idList.append(api.search_user(test_parameter['prefix'], test_parameter['liveController1_acc'], header))
     idList.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
-    idList.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))    
+    idList.append('3420dkajfpi4wujfasdkdp')    
 
 def teardown_module():
     pass
 
 
-class TestGetUserInfo():
+#scenario, token, nonce, idIndex, role, expect
+testData = [
+    ('user query', 'user_token', 'user_nonce', 2, 'ROLE_LIVE_CONTROLLER',2),
+    ('backend user query', 'backend_token', 'backend_nonce', 0, 'ROLE_MASTER', 2),
+    ('boradcaster query', 'brodcaster_token', 'broadcaster_nonce', 1, 'ROLE_BUSINESS_MANAGER', 2),
+    ('cs query', 'liveController1_token', 'liveController1_nonce', 3, 'ROLE_USER', 2),
+    ('uuid is wrong', 'user_token', 'user_nonce', 4, '', 4),
+    ('token/ nonce is wrong', 'err_token', 'err_nonce', 2, '', 4)
+]
+
+@pytest.mark.parametrize("scenario, token, nonce, idIndex, role, expect", testData)
+def testGetUserInfo(scenario, token, nonce, idIndex, role, expect):
     apiName = '/api/v2/identity/userInfo/'
-    def testGetCSInfo(self):
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']    
-        res = api.apiFunction(test_parameter['prefix'], header, self.apiName + idList[2], 'get', None)
+    header['X-Auth-Token'] = test_parameter[token]
+    header['X-Auth-Nonce'] = test_parameter[nonce]   
+    res = api.apiFunction(test_parameter['prefix'], header, apiName + idList[idIndex], 'get', None)
+    assert res.status_code // 100 == expect
+    if expect == 2:
         restext = json.loads(res.text)
-        print(self.apiName + idList[2])
-        print(type(restext['data']['roles']))
-        print(restext['data']['roles'])
-        assert res.status_code // 100 == 2        
-        assert restext['data']['roles'].find('ROLE_LIVE_CONTROLLER') > 0
-    
-    def testGetLivemasterInfo(self):
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']    
-        res = api.apiFunction(test_parameter['prefix'], header, self.apiName + idList[0], 'get', None)
-        restext = json.loads(res.text)
-        assert res.status_code // 100 == 2
-        assert restext['data']['roles'].find('ROLE_MASTER') > 0
-
-    def testGetAdminInfo(self):
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']    
-        res = api.apiFunction(test_parameter['prefix'], header, self.apiName + idList[1], 'get', None)
-        restext = json.loads(res.text)
-        assert res.status_code // 100 == 2
-        assert restext['data']['roles'].find('ROLE_BUSINESS_MANAGER') > 0
-
-    def testWithoutAuth(self):
-        header['X-Auth-Token'] = test_parameter['err_token']
-        header['X-Auth-Nonce'] = test_parameter['err_nonce']    
-        res = api.apiFunction(test_parameter['prefix'], header, self.apiName + idList[2], 'get', None)
-        assert res.status_code // 100 == 4
-
-
-    def testIdNotExist(self):
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']    
-        res = api.apiFunction(test_parameter['prefix'], header, self.apiName + 'adfpdifjioewokxjoixjdfowe', 'get', None)
-        assert res.status_code // 100 == 4
-
-    def testGetUserInfo(self):
-        header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']    
-        res = api.apiFunction(test_parameter['prefix'], header, self.apiName + idList[4], 'get', None)
-        restext = json.loads(res.text)
-        assert res.status_code // 100 == 2
-        assert restext['data']['roles'].find('ROLE_USER') > 0
- 
+        assert restext['data']['roles'][0]['name'] == role
+        assert len(restext['data']['profilePicture']) > 0

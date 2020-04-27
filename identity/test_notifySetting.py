@@ -55,9 +55,8 @@ class TestNotificationSetting():
         header['X-Auth-Token'] = test_parameter['backend_token']
         header['X-Auth-Nonce'] = test_parameter['backend_nonce']   
         self.mid = api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header)   
-
-    def teardown_class(self):
-        self.changeRole('4')
+        changelist = [self.mid]  
+        api.change_roles(test_parameter['prefix'], header, changelist, 4) #一般用戶:5;直播主：4
 
     @pytest.mark.parametrize("token, nonce, condition, body, expected", getTestData())
     def testSetting(self, token, nonce, condition, body, expected):
@@ -67,11 +66,11 @@ class TestNotificationSetting():
         if condition == 'changeRole':
             self.changeRole('5')       
         elif condition == 'setting':
-            api.apiFunction(test_parameter['prefix'], header, apiNmae, 'post', body)
-        res = api.apiFunction(test_parameter['prefix'], header, apiNmae, 'get', None)
-        restext = json.loads(res.text)
-        assert res.status_code // 100 == expected['status']
-        if res.status_code // 100 == 2:
+            res = api.apiFunction(test_parameter['prefix'], header, apiNmae, 'post', body)
+            assert res.status_code // 100 == expected['status']
+        if expected['status'] == 2:
+            res = api.apiFunction(test_parameter['prefix'], header, apiNmae, 'get', None)
+            restext = json.loads(res.text)
             restext['data']['comment'] == expected['comment']
             restext['data']['track'] == expected['track']
             restext['data']['live'] == expected['live']
