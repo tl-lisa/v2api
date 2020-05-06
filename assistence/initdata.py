@@ -8,7 +8,7 @@ sys.dont_write_bytecode = True
 
 
 def set_test_data(env, test_parameter):    
-    if env == 'testing':
+    if env == 'QA':
         #test_parameter['prefix'] = 'http://testing-api.truelovelive.com.tw'
         test_parameter['prefix'] = 'http://35.234.6.138'
         test_parameter['db'] = '35.234.6.138'
@@ -90,6 +90,15 @@ def initIdList(prefix, token, nonce, accountList, idList):
         idList.append(api.search_user(prefix, i, header))
     return 
     
+def clearOrder(db):
+    sqlList = []
+    tableList = ['remain_points_history', 'purchase_order']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr) 
+    dbConnect.dbSetting(db, sqlList)
+
+
 def clearIdentityData(dbInfo):
     sqlList = []
     tableList = ['identity_email_register_history', 'identity_email_bind_history', 'identity_third_party', 'identity_line', 'identity_profile']
@@ -98,7 +107,6 @@ def clearIdentityData(dbInfo):
     for i in tableList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)       
-    sqlList.append(sqlStr)
     delList = ['identity_role', 'remain_points', 'user_settings', 'user_experience', 'announcement_v2_identity_association', 'identity']
     for k in delList:
         for i in range(len(result)):
@@ -131,7 +139,7 @@ def clearFansInfo(db):
 
 def clearIMInfo(db):
     sqlList = []
-    truncateList = ['instant_message_point_history', 'instant_message_video', 'instant_message_image', 'instant_message_text']
+    truncateList = ['instant_message_point_history', 'instant_message_video', 'instant_message_image', 'instant_message_text', 'zego_master']
     for i in truncateList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)

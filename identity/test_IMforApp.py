@@ -9,7 +9,7 @@ from ..assistence import dbConnect
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 idList = []
 createTime = []
@@ -121,11 +121,7 @@ class TestgetRoomList():
         assert res.status_code // 100 == 2
         assert len(restext['data']) == len(self.dialogIdList)
     
-
-class TestBlack():
-    def testBlacklist(self):
-        #直播主將user加入黑名單後，直播主看不到該聊天室；但user可以看到
-        pass
+ 
 
 
 class TestcreateMessage():
@@ -453,9 +449,10 @@ class TestMessageToLiveMaster():
         content = '哈囉大主播，我是你的小粉1號'   
         valuesList.extend([idList[0], '', 'text', content, '', '', ''])       
         body = createBody(valuesList)
-        pprint(body)
+        #pprint(body)
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)    
         restest = json.loads(res.text)   
+        pprint(restest)
         assert res.status_code // 100 == 2
         assert restest['data']['pointLeft'] == 0
         afExperience = self.getDBData(sqlStr)
@@ -506,6 +503,21 @@ class TestMessageToLiveMaster():
         sqlStr = "select experience, identity_id from user_experience where identity_id in ('" + idList[0] + "', '" + idList[3]  + "') order by identity_id"     
         bfExperience = self.getDBData(sqlStr)
         self.updatePoint(20, idList[3])
+        #直播主封鎖該名user;直播主聊天室無該名user,但該user卻可看到聊天室
+        apiName = '/api/v2/identity/instantMessage/roomlist?userId={userId}&item=20&page=1'
+        apiName = apiName.replace('{userId}', idList[3])
+        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
+        assert res.status_code // 100 == 2
+        restext = json.loads(res.text)
+        assert restext['data'] == []
+        header['X-Auth-Token'] = test_parameter['user_token']
+        header['X-Auth-Nonce'] = test_parameter['user_nonce'] 
+        apiName = apiName.replace('{userId}', idList[0])
+        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
+        assert res.status_code // 100 == 2
+        restext = json.loads(res.text)
+        assert restext['data']['userId'] == idList[0]
+        dialogId = restext['data']['dialogId']
         apiName = '/api/v2/identity/instantMessage'
         header['X-Auth-Token'] = test_parameter['user_token']
         header['X-Auth-Nonce'] = test_parameter['user_nonce']    
@@ -522,6 +534,18 @@ class TestMessageToLiveMaster():
                 assert afExperience[i][0] - bfExperience[i][0] == 20
             else:
                 assert afExperience[i][0] - bfExperience[i][0] == 60
+        #直播主無法取得黑名單聊天室的內容；但被黑的user卻仍可以看到
+        apiName = '/api/v2/identity/instantMessage/history?dialogId=' + dialogId
+        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)    
+        restest = json.loads(res.text)   
+        assert res.status_code // 100 == 2
+        assert restest['data']['receiver'] == idList[0]
+        header['X-Auth-Token'] = test_parameter['broadcaster_token']
+        header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce'] 
+        res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)    
+        restest = json.loads(res.text)   
+        assert res.status_code // 100 == 2
+        assert restest['data'] == []
 
     def testUserSendTwiceToLive(self):
         # 發送訊息給LiveMaster，應該扣點；經驗值增加(user+20*3; livemaster+20)
@@ -575,7 +599,11 @@ class TestMessageToLiveMaster():
         body = createBody(valuesList)
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)    
         assert res.status_code // 100 == 4
+        header['X-Auth-Token'] = test_parameter['backend_token']
+        header['X-Auth-Nonce'] = test_parameter['backend_nonce']   
+        api.change_roles(test_parameter['prefix'], header, changelist, '4') #轉回直播主
     
+
     def testMasterWithUserOnly7day(self):
         #超過7天的訊息即不會撈出
         sqlList = []

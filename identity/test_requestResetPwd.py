@@ -13,7 +13,7 @@ from ..assistence import initdata
 from ..assistence import api
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 
 def setup_module():
@@ -151,12 +151,13 @@ class TestVerify():
                 "activateCode": self.info[1]['activateCode']
             }
         elif scenario == 'expired':
-            sqlList = ["update identity_pwd_reset_history set expires_in = 0  where token = '" + self.info[0]['tmpToken'] + "'"]
+            sqlList = ["update identity_pwd_reset_history set expires_in = 1 where token = '" + self.info[0]['tmpToken'] + "'"]
             dbConnect.dbSetting(test_parameter['db'], sqlList)
             body = {
                 "tmpToken": self.info[0]['tmpToken'],
                 "activateCode": self.info[0]['activateCode']
             }
+            time.sleep(2)
         elif scenario == 'success':
             body = {
                 "tmpToken": self.info[1]['tmpToken'],

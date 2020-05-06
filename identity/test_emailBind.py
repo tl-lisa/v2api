@@ -13,7 +13,7 @@ from pprint import pprint
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 mailList = ['lisa@truelovelivelive.dev', 'tlqa20200313@gmail.com', 'lisa233152@gmail.com']
 
@@ -211,8 +211,9 @@ class TestActivateCode():
         elif condition == 'codeExpired':
             sqlStr = "select max(id) from identity_email_bind_history"
             result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
-            sqlList = ["update identity_email_bind_history set expires_in = 0 where id = " + str(result[0][0])]
+            sqlList = ["update identity_email_bind_history set expires_in = 1 where id = " + str(result[0][0])]
             dbConnect.dbSetting(test_parameter['db'], sqlList)
+            time.sleep(2)
         if type(PWD) == list:
             for i in range(len(PWD)):
                 body["password"] = PWD[i]

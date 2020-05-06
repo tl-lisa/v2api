@@ -187,6 +187,8 @@ class TestGetList():
                 assert str(restext['data']).find(masterId[i]) < 0
             else:
                 assert str(restext['data']).find(masterId[i]) >= 0
+        for i in restext['data']:
+            assert i['profilePicture'] != ''
         
 
     @pytest.mark.parametrize('scenario, isBlock, isChangeRole, token, nonce, expected, totalCount, masterId', getTestData('getList'))
@@ -213,7 +215,8 @@ class TestGetList():
                 assert str(restext['data']).find(masterId[i]) < 0
             else:
                 assert str(restext['data']).find(masterId[i]) >= 0
-       
+        for i in restext['data']:
+            assert i['profilePicture'] != ''
 
 def testOnair():
     header1 = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}

@@ -263,6 +263,7 @@ def get_photo_list(prefix, header1, master_id, inum, pnum):
     url = prefix + '/api/v2/liveMaster/' + master_id + '/photoPost?item=' + inum + '&page=' + pnum
     #print(url)
     res = requests.get(url, headers=header1)
+    #print('get photo list(%d)'%res.status_code)
     return(res)
 
 

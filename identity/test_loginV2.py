@@ -13,7 +13,7 @@ from ..assistence import dbConnect
 from python_settings import settings
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 
 def emailReg(emailAddr, PWD):
@@ -42,7 +42,7 @@ def setup_module():
     initdata.clearIdentityData(test_parameter['db'])
     emailReg('lisa@gmail.com', '123456')
 
-def teardown_modules():
+def teardown_module():
     head = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': test_parameter['backend_token'], 'X-Auth-Nonce': test_parameter['backend_nonce']}
     id = api.search_user(test_parameter['prefix'], 'track0075', head)
     api.change_user_mode(test_parameter['prefix'], id, '1', head)

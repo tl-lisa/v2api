@@ -21,6 +21,9 @@ selenium = "*"
 google-api-python-client = "*"
 google-auth-httplib2 = "*"
 google-auth-oauthlib = "*"
+crypto = "*"
+collections = "*"
+collections2 = "*"
 
 [requires]
 python_version = "3.7"

@@ -12,7 +12,7 @@ from ..assistence import api
 from pprint import pprint
 
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 
 def setup_module():
@@ -173,8 +173,9 @@ class TestActivateCode():
         elif condition == 'expired':
             sqlStr = "select max(id) from identity_email_register_history"
             result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
-            sqlList = ["update identity_email_register_history set expires_in = 0  where id = " + str(result[0][0])]
+            sqlList = ["update identity_email_register_history set expires_in = 1  where id = " + str(result[0][0])]
             dbConnect.dbSetting(test_parameter['db'], sqlList)
+            time.sleep(2)
         pprint(condition)
         res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)
         assert res.status_code // 100 == expected

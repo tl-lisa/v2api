@@ -1,10 +1,97 @@
 import time
 import socket
 import paramiko
+import base64
+import hashlib
+import json
 from pprint import pprint
 from datetime import datetime, timedelta
 from . import chatlib
 from . import api
+from collections import OrderedDict
+from Crypto.Cipher import AES
+
+
+class Cryptor:
+    def __init__(self, key, iv):
+        self.key = base64.b64decode(key)
+        self.iv = base64.b64decode(iv)
+
+    def encrypt(self, string):
+        string = self.pad(string)
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        return base64.b64encode(cipher.encrypt(string))
+
+    def decrypt(self, string):
+        enc = base64.b64decode(string)
+        cipher = AES.new(self.key, AES.MODE_CBC, self.iv)
+        return self.unpad(cipher.decrypt(enc))
+
+    def sha1(self, string):
+        s = hashlib.sha1()
+        s.update(string)
+        return s.hexdigest()
+
+    def pad(self, s):
+        BS = 16
+        return s + (BS - len(s) % BS) * chr(BS - len(s) % BS)
+
+    def unpad(self, s):
+        return s[:-ord(s[len(s)-1:])]
+
+def yipayencode(paramsData):
+    jsonString = json.dumps(paramsData, separators=(',', ':'))  # 產出無空格的 JSON
+    keyString = 'zBaw7bzzD8K1THSGoIbev08xEJp5yzyeuv1MWJDR2L0='  # AES Key，此為測試環境用，正式環境請替換為商家專用的 Key
+    ivString = 'YeQInQjfelvkBcWuyhWDAw=='                       # AES IV，此為測試環境用，正式環境請替換為商家專用的 IV
+    cryptor = Cryptor(keyString, ivString)
+    encryptString = cryptor.encrypt(jsonString)
+    checkCode = cryptor.sha1(encryptString)
+    return(checkCode)
+
+def yipay(prefix, header, userId, prodId, isCallback):
+    initData = {}
+    body = {}
+    initData['userId'] = userId
+    initData['merchantId'] = '1604000006'
+    initData['prodId'] = prodId#'web.points.120'
+    initData['paymentType'] = 1
+    initData['orderDescription'] = '訂單描述'
+    initData['returnURL'] = 'https://gateway-test.yipay.com.tw/demo/return'
+    initData['cancelURL'] = 'https://gateway-test.yipay.com.tw/demo/cancel'
+    initData['notificationEmail'] = 'lisa@truelove.dev'
+    initData['receiptDonate'] = True
+    initData['receiptName'] = 'QA Test'
+    initData['receiptTel'] = '0988111111'
+    initData['receiptAddr'] = '地球宇宙防衛廳'
+    initData['receiptEmail'] = 'lisa@truelove.dev'
+    initData['businessNo'] = ''
+    if isCallback:
+        res = api.yipay_init(prefix, initData, header)
+        restext = json.loads(res.text)
+        pprint(restext)
+        payload = OrderedDict()
+        body['merchantId'] = '1604000006'
+        body['type'] = 1
+        body['amount'] = restext['amount']
+        body['orderNo'] = restext['orderNo']
+        body['transactionNo'] = 'DD1234567'
+        body['statusCode'] = '00'
+        body['statusMessage'] = 'Success'
+        body['approvalCode'] = 'QAR123456'
+        payload['merchantId'] = '1604000006'
+        payload['amount'] = str(restext['amount'])
+        payload['orderNo'] = restext['orderNo']
+        payload['returnURL'] = 'https://gateway-test.yipay.com.tw/demo/return'
+        payload['cancelURL'] = 'https://gateway-test.yipay.com.tw/demo/cancel'
+        payload['backgroundURL'] = restext['backgroundURL']
+        payload['transactionNo'] = 'DD1234567'
+        payload['statusCode'] = '00'
+        payload['approvalCode'] = 'QAR123456'
+        body['checkCode'] = yipayencode(payload)
+        api.yipay_callback(prefix, body, header)
+    else:
+        api.yipay_init(prefix, initData, header)
+
 
 def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
     try: 
