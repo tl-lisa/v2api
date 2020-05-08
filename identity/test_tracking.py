@@ -22,7 +22,7 @@ from ..assistence import dbConnect
 from ..assistence import sundry
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 idList = []
@@ -138,6 +138,11 @@ class TestTrack():
 @pytest.fixture(scope="class")
 def testInit():
     initdata.clearFansInfo(test_parameter['db'])
+    header['X-Auth-Token'] = test_parameter['backend_token']
+    header['X-Auth-Nonce'] = test_parameter['backend_nonce']  
+    url = '/api/v2/backend/user/role'
+    body = {'ids': [idList[0], idList[1]], 'role': 4}
+    api.apiFunction(test_parameter['prefix'], header, url, 'patch', body)  
     header['X-Auth-Token'] = test_parameter['user_token']
     header['X-Auth-Nonce'] = test_parameter['user_nonce']  
     urlName = '/api/v2/identity/multipleTrack'
@@ -158,10 +163,12 @@ class TestGetList():
     def setup_method(self):
         header['X-Auth-Token'] = test_parameter['backend_token']
         header['X-Auth-Nonce'] = test_parameter['backend_nonce']  
-        api.change_roles(test_parameter['prefix'], header, [idList[1]], 4)   
+        url = '/api/v2/backend/user/role'
+        body = {'ids': [idList[1]], 'role': 4}
+        api.apiFunction(test_parameter['prefix'], header, url, 'patch', body)  
         header['X-Auth-Token'] = test_parameter['broadcaster_token']
         header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce'] 
-        api.delete_block_user(test_parameter['prefix'], header, idList[2])
+        api.delete_block_user(test_parameter['prefix'], header,  idList[2])
 
     @pytest.mark.parametrize('scenario, isBlock, isChangeRole, token, nonce, expected, totalCount, masterId', getTestData('getList'))
     def testGetTrackList(self, testInit, scenario, isBlock, isChangeRole, token, nonce, expected, totalCount, masterId):
@@ -173,7 +180,9 @@ class TestGetList():
         elif isChangeRole:
             header['X-Auth-Token'] = test_parameter['backend_token']
             header['X-Auth-Nonce'] = test_parameter['backend_nonce']  
-            api.change_roles(test_parameter['prefix'], header, masterId, 5)   
+            url = '/api/v2/backend/user/role'
+            body = {'ids': [idList[1]], 'role': 5}
+            api.apiFunction(test_parameter['prefix'], header, url, 'patch', body)  
         time.sleep(30)
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]  
@@ -201,7 +210,9 @@ class TestGetList():
         elif isChangeRole:
             header['X-Auth-Token'] = test_parameter['backend_token']
             header['X-Auth-Nonce'] = test_parameter['backend_nonce']  
-            api.change_roles(test_parameter['prefix'], header, [idList[1]], 5)   
+            url = '/api/v2/backend/user/role'
+            body = {'ids': [idList[1]], 'role': 5}
+            api.apiFunction(test_parameter['prefix'], header, url, 'patch', body)
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]  
         time.sleep(30)
@@ -216,7 +227,7 @@ class TestGetList():
             else:
                 assert str(restext['data']).find(masterId[i]) >= 0
         for i in restext['data']:
-            assert i['profilePicture'] != ''
+            assert i['owner']['profilePicture'] != ''
 
 def testOnair():
     header1 = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}

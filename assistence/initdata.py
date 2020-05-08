@@ -129,7 +129,7 @@ def clearIdentityData(dbInfo):
 
 def clearFansInfo(db):
     sqlList = []       
-    truncateList = ['user_follows', 'fans', 'user_blocks', 'fans_history', 'photo_report', 'photo_comment', 'photo_like', 'notification_v2_identity_association']
+    truncateList = ['user_follows', 'fans', 'user_blocks', 'fans_history', 'photo_report', 'photo_comment', 'photo_like', 'notification_v2_identity_association', 'zego_master']
     for i in truncateList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)

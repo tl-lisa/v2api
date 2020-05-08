@@ -92,7 +92,6 @@ def yipay(prefix, header, userId, prodId, isCallback):
     else:
         api.yipay_init(prefix, initData, header)
 
-
 def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
     try: 
         if isZego:
@@ -100,6 +99,7 @@ def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
         else:      
             print('中華 head = %s'%head)
         sockinfo = api.get_load_balance(env, head)
+        print(sockinfo)
         sip = sockinfo['socketIp']
         sport = int(sockinfo['socketPort'])
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

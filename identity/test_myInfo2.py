@@ -119,8 +119,10 @@ class TestGetMyInfo():
             assert restext['data']['roles'][0]['id'] == role
             assert restext['data']['loginId'] == test_parameter[account]
             assert len(restext['data']['trueLoveId']) > 0
-            assert restext['data']['profilePicture'] in ['https://d1a89d7jvcvm3o.cloudfront.net/personal/d8b6498ba1119ff945bb2d9f9a33cfd1.jpeg',
-            'https://d1a89d7jvcvm3o.cloudfront.net/personal/fadbe97ffce8c3b940e647ced2c81c87.jpeg']
+            assert restext['data']['profilePicture'] in [
+            'https://d1a89d7jvcvm3o.cloudfront.net/personal/d8b6498ba1119ff945bb2d9f9a33cfd1.jpeg',
+            'https://d1a89d7jvcvm3o.cloudfront.net/personal/fadbe97ffce8c3b940e647ced2c81c87.jpeg',
+            'https://d1a89d7jvcvm3o.cloudfront.net/personal/ec824bfe102a60882da1d54dfffd52a9.jpeg']
             
 
 '''
