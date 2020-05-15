@@ -5,10 +5,10 @@ import pymysql
 import pytest
 import time
 import string
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import lineLogin
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import lineLogin
 from pprint import pprint
 
 env = 'QA'

@@ -1,8 +1,8 @@
 import time
 import json
 import pytest
-from ..assistence import api
-from ..assistence import initdata
+from assistence import api
+from assistence import initdata
 from pprint import pprint
 from datetime import datetime, timedelta
 

@@ -6,13 +6,13 @@ import pymysql
 import time
 import pytest
 import string
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import photo
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import photo
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 idlist = []
 testData = []

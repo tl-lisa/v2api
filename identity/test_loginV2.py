@@ -5,11 +5,11 @@ import pymysql
 import time
 import pytest
 import string
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import setting as mysetting
-from ..assistence import lineLogin
-from ..assistence import dbConnect
+from assistence import api
+from assistence import initdata
+from assistence import setting as mysetting
+from assistence import lineLogin
+from assistence import dbConnect
 from python_settings import settings
 from pprint import pprint
 

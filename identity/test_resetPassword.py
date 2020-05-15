@@ -8,9 +8,9 @@ import pytest
 import time
 import string
 from datetime import datetime, timedelta
-from ..assistence import dbConnect
-from ..assistence import initdata
-from ..assistence import api
+from assistence import dbConnect
+from assistence import initdata
+from assistence import api
 from pprint import pprint
  
 env = 'QA'

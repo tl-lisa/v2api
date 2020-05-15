@@ -5,13 +5,13 @@ import pymysql
 import time
 import string
 import pytest
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import lineLogin
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import lineLogin
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 
 def emailReg(emailAddr, PWD):

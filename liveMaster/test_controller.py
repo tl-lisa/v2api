@@ -1,12 +1,12 @@
 #coding = utf-8
 import time
 import json
-from ..assistence import api
-from ..assistence import initdata
+from assistence import api
+from assistence import initdata
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 cards = []
 header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}

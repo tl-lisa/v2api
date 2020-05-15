@@ -4,13 +4,13 @@ import requests
 import time
 import string
 import pytest
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 idList = []
 createTime = []
@@ -48,7 +48,8 @@ class TestcreateMsg():
         initdata.clearIMInfo(test_parameter['db'])
 
     @pytest.mark.parametrize("scenario, sendertoken, sendernonce, valuesList, expected", getData('getRoom'))
-    def testCreateRoom(self, )
+    def testCreateRoom(self, scenario, sendertoken, sendernonce, valuesList, expected):
+        pass
 
 class TestgetRoomList():
     dialogIdList = []

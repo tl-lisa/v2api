@@ -7,10 +7,10 @@ import pytest
 import time
 import string
 from datetime import datetime, timedelta
-from ..assistence import dbConnect
-from ..assistence import initdata
-from ..assistence import api
-from ..assistence import lineLogin
+from assistence import dbConnect
+from assistence import initdata
+from assistence import api
+from assistence import lineLogin
 from pprint import pprint
 
 env = 'QA'
@@ -180,3 +180,4 @@ class TestUpdateMyinfo():
         if expected == 2:
             assert restext['data'][keyInfo] == valueInfo
             assert len(restext['data']['trueLoveId']) > 0
+            assert restext['data']['nickname'] is not None

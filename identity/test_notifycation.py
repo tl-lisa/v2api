@@ -10,15 +10,15 @@ import string
 import threading
 import socket
 import pytest
-from ..assistence import chatlib
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import sundry
-from ..assistence import photo
+from assistence import chatlib
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import sundry
+from assistence import photo
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 idList = []

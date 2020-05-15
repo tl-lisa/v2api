@@ -15,11 +15,11 @@ import string
 import threading
 import socket
 import pytest
-from ..assistence import chatlib
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import sundry
+from assistence import chatlib
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import sundry
 from pprint import pprint
 
 env = 'QA'

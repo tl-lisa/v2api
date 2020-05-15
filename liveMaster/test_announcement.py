@@ -3,12 +3,12 @@
 import time
 import json
 import pytest
-from ..assistence import api
-from ..assistence import initdata
+from assistence import api
+from assistence import initdata
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 # 過濾使用者等級，None或者空 list表示不過濾使用者等級，等級列表如下: bronze: 青銅 silver: 白銀 gold: 黃金 diamond: 鑽石 niello: 黑金

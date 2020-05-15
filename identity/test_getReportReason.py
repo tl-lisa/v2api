@@ -2,12 +2,12 @@ import json
 import requests
 import time
 import string
-from ..assistence import api
-from ..assistence import initdata
+from assistence import api
+from assistence import initdata
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 idList = []
 createTime = []

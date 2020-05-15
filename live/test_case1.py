@@ -7,14 +7,14 @@ import pytest
 import socket
 import multiprocessing as mp
 import traceback
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import chatlib
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import chatlib
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 cards = []
 idlist = []

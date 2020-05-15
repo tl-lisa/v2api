@@ -57,10 +57,10 @@ def dictest(dictype):
 
 
 if __name__ == '__main__':
-    #now = int(time.mktime((datetime.today() - timedelta(days=1)).timetuple()))
-    now = datetime.fromtimestamp(int(time.time()))# .strftime('%Y-%m-%d %H:%M:%S')
+    now = int(time.mktime((datetime.today() - timedelta(days=1)).timetuple()))
+    #now = datetime.fromtimestamp(int(time.time()))# .strftime('%Y-%m-%d %H:%M:%S')
     yesterday = datetime.fromtimestamp(int(time.time())) - timedelta(days=1)
-    #print(now, yesterday) 
+    print(now, yesterday) 
     dtDay = (datetime.today() - timedelta(days=7+datetime.today().weekday()) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
     dtDay = datetime.today() - timedelta(days=1+datetime.today().weekday())
     dtDay = datetime.today().day
@@ -79,6 +79,7 @@ if __name__ == '__main__':
     testday = int(datetime.strptime(((datetime.today() - timedelta(days=1)).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S').strftime('%s'))
     #print(testday)
     
+    '''
     numinfo = {}
     dicodd = {}
     diceven = {}
@@ -99,3 +100,11 @@ if __name__ == '__main__':
     
     pprint(numinfo)
 
+    '''
+    teams = {}
+    for i in range(3):
+        temp = {}
+        temp['members'] = i
+        temp['name'] = 'test'+str(i)
+        teams[str(i + 1)] = temp
+    pprint(teams) 

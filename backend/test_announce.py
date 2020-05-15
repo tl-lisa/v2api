@@ -2,11 +2,11 @@ import json
 import requests
 import time
 import string
-from ..assistence import api
-from ..assistence import initdata
+from assistence import api
+from assistence import initdata
 from pprint import pprint
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 

@@ -3,14 +3,14 @@ import requests
 import pymysql
 import time
 import string
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
-from ..assistence import sundry
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
+from assistence import sundry
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 create_At = int(time.time())
 header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}

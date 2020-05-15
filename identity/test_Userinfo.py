@@ -3,13 +3,13 @@ import requests
 import time
 import string
 import pytest
-from ..assistence import api
-from ..assistence import initdata
-from ..assistence import dbConnect
+from assistence import api
+from assistence import initdata
+from assistence import dbConnect
 from pprint import pprint
 from datetime import datetime, timedelta
 
-env = 'testing'
+env = 'QA'
 test_parameter = {}
 idList = []
 header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
