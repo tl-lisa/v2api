@@ -101,6 +101,8 @@ if __name__ == '__main__':
     pprint(numinfo)
 
     '''
+
+    print('lenth=%d'%(len('💞')))
     teams = {}
     for i in range(3):
         temp = {}
