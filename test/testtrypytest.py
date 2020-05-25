@@ -1,7 +1,7 @@
 import pytest
 
 @pytest.fixture(scope='module')
-def initRun(self):
+def initRun():
     print('init')
 
 class Testfixture1(): 
@@ -16,9 +16,10 @@ class Testfixture1():
     def getdata(self, num):
         print(num)
 
-    def testFixture1(self, firstRun, secondRun):
+    def testFixture1(self, initRun, firstRun, secondRun):
         print('test body')
-        self.getdata(3)
         
-    def testFixture2(self, firstRun, secondRun):
+        
+    def testFixture2(self, initRun, firstRun, secondRun):
         print('test2 body')
+       
