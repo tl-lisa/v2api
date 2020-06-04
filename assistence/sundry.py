@@ -92,14 +92,14 @@ def yipay(prefix, header, userId, prodId, isCallback):
     else:
         api.yipay_init(prefix, initData, header)
 
+
 def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
     try: 
-        if isZego:
-            print('Zego head = %s'%head)
-        else:      
-            print('中華 head = %s'%head)
+        # if isZego:
+        #     print('Zego head = %s'%head)
+        # else:      
+        #     print('中華 head = %s'%head)
         sockinfo = api.get_load_balance(env, head)
-        print(sockinfo)
         sip = sockinfo['socketIp']
         sport = int(sockinfo['socketPort'])
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -107,14 +107,15 @@ def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
         sock.connect(server_address)
         chatlib.chat_room_auth(sock, head)  
         if isZego:
-            print('open at zego')
+            #print('open at zego')
             rid = chatlib.enterZego(sock, roomId)
-            print('Zego Open finish, room Id = %d' % rid)
+            #print('Zego Open finish, room Id = %d' % rid)
         else:
-            print('open at 中華')
+            #print('open at 中華')
             rid = chatlib.new_room(sock, roomtitle)
-            print('中華Open finish, room Id = %d' % rid)
-        start_time = time.time()
+            #print('中華Open finish, room Id = %d' % rid)
+        #start_time = time.time()
+        '''
         while 1:
             print('Zego keep live') if isZego else print('China keep live') 
             time.sleep(sleeptime)
@@ -124,7 +125,8 @@ def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
                 print('Zego Close Room') if isZego else print('China Close Room')        
                 break
             chatlib.keep_live(sock)
-        return rid
+        '''
+        return rid, chatlib, sock
     except Exception as e:
         print(e)
 

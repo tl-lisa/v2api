@@ -48,6 +48,7 @@ testData = [
 
 @pytest.mark.parametrize("scenario, token, nonce, masterIndex, lineNum, isTracking, isBlocking, isChangeRole, isOnAir, expected, trackNum, tracked, onairCount", testData)
 def testMasterInfo(scenario, token, nonce, masterIndex, lineNum, isTracking, isBlocking, isChangeRole, isOnAir, expected, trackNum, tracked, onairCount):
+    chartInfo = []
     if isBlocking:
         header['X-Auth-Token'] = test_parameter['broadcaster_token']
         header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce'] 
@@ -73,16 +74,14 @@ def testMasterInfo(scenario, token, nonce, masterIndex, lineNum, isTracking, isB
             apiName = '/api/v2/liveMaster/zego/liveRoom'
             res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', {})
             restext = json.loads(res.text)
-            rid = sundry.Openroom(test_parameter['prefix'], header, 5, True, restext['data']['roomId'], 'Zegp開播', 5)
+            chartInfo = sundry.Openroom(test_parameter['prefix'], header, 5, True, restext['data']['roomId'], 'Zego開播', 5)
         else:
             header['X-Auth-Token'] = test_parameter['broadcaster1_token']
             header['X-Auth-Nonce'] = test_parameter['broadcaster1_nonce'] 
-            rid = sundry.Openroom(test_parameter['prefix'], header, 20, False, 0, 'test', 5)
-        print('room id = %s'%rid)
+            chartInfo = sundry.Openroom(test_parameter['prefix'], header, 20, False, 0, '中華開播', 5)
     header['X-Auth-Token'] = test_parameter[token]
     header['X-Auth-Nonce'] = test_parameter[nonce] 
     urlName = '/api/v2/identity/masterInfo/' + idList[masterIndex]
-    pprint(urlName)
     res = api.apiFunction(test_parameter['prefix'], header, urlName, 'get', None)
     assert res.status_code // 100 == expected
     if expected == 2:
@@ -92,8 +91,10 @@ def testMasterInfo(scenario, token, nonce, masterIndex, lineNum, isTracking, isB
         assert restext['data']['profilePicture'] is not None
         assert restext['data']['tracked'] == tracked
         assert restext['data']['fansCount'] == trackNum
+        assert len(restext['data']['nickname']) > 0
         if isOnAir:
             assert restext['data']['roomCreateAt'] >= onAirTime 
-            assert restext['data']['roomStatus'] == 0
-            assert restext['data']['roomId'] == rid
+            assert restext['data']['roomStatus'] == 1
+            assert restext['data']['roomId'] == chartInfo[0]
             assert restext['data']['roomType'] == lineNum
+            chartInfo[1].leave_room(chartInfo[0], chartInfo[2])  

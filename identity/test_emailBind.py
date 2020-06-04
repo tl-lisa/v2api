@@ -1,4 +1,5 @@
 #milestone19 email綁定流程中，用既有帳號做驗證 861/862
+#milestone23 限制次數依照email做為識別；而非依帳號 #1212
 import json
 import requests
 import pymysql
@@ -65,6 +66,7 @@ def getTestData(testName):
         #isBinded, bindEmail, expected
         return([
                 (False, ['lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev'], [2, 2, 2, 4]),
+                (False, ['lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa@truelovelive.dev', 'lisa123@truelovelive.dev'], [2, 2, 2, 2]),
                 (False, ['lisa@truelovelive', '@gmail.com', 'tlqa20200313@.com'], [4, 4, 4]),
                 (True, ['lisa@truelovelive.dev', 'lisa@truelovelive.dev'], [2, 4])
             ])  
@@ -142,8 +144,8 @@ class TestSendEmail():
                 'email': bindEmail[i]
             }
             res = api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body)  
-            restext = json.loads(res.text)
-            pprint(restext)
+            #restext = json.loads(res.text)
+            #pprint(restext)
             assert res.status_code // 100 == expected[i]
             if isBinded and (res.status_code // 100 ==  2):
                 self.runActiveCode(bindEmail[i])
@@ -221,6 +223,6 @@ class TestActivateCode():
                 assert res.status_code // 100 == expected
         else:
             body["password"] = PWD
-            pprint(body)
+            #pprint(body)
             res =  api.apiFunction(test_parameter['prefix'], self.head, url, 'post', body) 
             assert res.status_code // 100 == expected

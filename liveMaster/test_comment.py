@@ -118,10 +118,16 @@ class TestliveComment():
         
     @pytest.mark.parametrize("scenario, token, nonce, cid, expected", getTestData('delComment'))
     def test_delete_comment(self, scenario, token, nonce, cid, expected ):
-        header['X-Auth-Token'] = token
-        header['X-Auth-Nonce'] = nonce  
+        header['X-Auth-Token'] = test_parameter[token]
+        header['X-Auth-Nonce'] = test_parameter[nonce] 
         res = api.delete_comment(test_parameter['prefix'], header, self.pid, cid)
         assert res.status_code // 100 == expected
         if expected == 2:
             res = api.get_comment_list(test_parameter['prefix'], header, self.pid, '10', '1')
-            assert res.text.find(cid) < 0
+            restext = json.loads(res.text)
+            isFound = False
+            for i in restext['data']:
+                if i['id'] == int(cid):
+                    isFound = True
+                    break
+            assert isFound == False

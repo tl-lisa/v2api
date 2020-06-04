@@ -1,4 +1,6 @@
 #milestone19 #858 Line login 用line順便驗證第3方登入的流程
+#milestone22 第3方登入要檢查是否停權 #1158
+#milestone23 新註冊用戶未填nickname需自動帶預設值'初樂用戶 ' #1245
 import json
 import requests
 import pymysql
@@ -48,7 +50,7 @@ class TestLineLogin():
     @pytest.mark.parametrize("condition, expected", getTestData())
     def testlineFlow(self, condition, expected):
         url = '/api/v2/3rdParty/line/verify'
-        print('condition=%s'%condition)
+        #print('condition=%s'%condition)
         if condition == 'firstLogin':
             idToken, accessToken = (lineLogin.line_login())
             body = {
@@ -74,8 +76,11 @@ class TestLineLogin():
                 'idToken': 'aBcdoeiDp'
             }
         elif condition == 'suspend':
+            sqlStr = "select identity_id from identity_third_party where remote_user_id = 'U28ec1317311a7e4da93b5da156a376f4'"
+            record = dbConnect.dbQuery(test_parameter['db'], sqlStr)
             header['X-Auth-Token'] = test_parameter['backend_token']
             header['X-Auth-Nonce'] = test_parameter['backend_nonce'] 
+            self.userId = record[0][0]
             api.change_user_mode(test_parameter['prefix'], self.userId, -2, header)
             body = {
                 'accessToken': self.auth[1]['accessToken'],
@@ -89,12 +94,10 @@ class TestLineLogin():
             assert 'nonce' in restext['data']
             assert 'token' in restext['data']
             assert 'idToken' in restext['data']
-            apiName = '/api/v2/identity/myInfo'
-            header['X-Auth-Token'] = restext['data']['token']
-            header['X-Auth-Nonce'] = restext['data']['nonce'] 
-            res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
             restext = json.loads(res.text)
-            self.userId = restext['data']['id']
+            sqlStr = "select nickname from identity where token = '" + restext['data']['token'] + "' and  nonce = '" + restext['data']['nonce'] + "'"
+            record = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+            assert '初樂用戶 ' in record[0][0]
             time.sleep(10)
         if condition == 'secondLogin':
             restext = json.loads(res.text)

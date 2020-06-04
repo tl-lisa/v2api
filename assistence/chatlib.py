@@ -86,7 +86,7 @@ def keep_live(sock):
     if receive_data.find('error') > 0:
         result = 1
     elif receive_data.find('ROOM_EXITED') > 0:
-        print('Room_Exited %s' % time.localtime())
+        #print('Room_Exited %s' % time.localtime())
         result = 2
     return(result, receive_data)
 
@@ -107,7 +107,7 @@ def new_room(sock, roomtitle):
                 check1 = json.loads(i)
                 #pprint(check1)
                 if check1['event'] == 'ROOM_IN':
-                    pprint('ROOM_in: %s'%check1['data'])  
+                    #pprint('ROOM_in: %s'%check1['data'])  
                     roomId = check1['data']['roomId']
                     isContinue = False 
     return roomId

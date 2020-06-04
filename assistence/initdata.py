@@ -9,9 +9,11 @@ sys.dont_write_bytecode = True
 
 def set_test_data(env, test_parameter):    
     if env == 'QA':
-        #test_parameter['prefix'] = 'http://testing-api.truelovelive.com.tw'
-        test_parameter['prefix'] = 'http://35.234.6.138'
-        test_parameter['db'] = '35.234.6.138'
+        test_parameter['prefix'] = 'http://35.194.187.187'
+        test_parameter['db'] = '35.194.187.187'
+    elif env == 'test':
+        test_parameter['prefix'] = 'http://testing-api.truelovelive.com.tw'
+        test_parameter['db'] = 'testing-api.truelovelive.com.tw'
     test_parameter['user_acc'] = 'track0050'
     test_parameter['user1_acc'] = 'track0040'
     test_parameter['backend_acc'] = 'tl-lisa'
@@ -27,48 +29,49 @@ def set_test_data(env, test_parameter):
     test_parameter['broadcaster_pass'] = '123456'
     test_parameter['broadcaster1_pass'] = '123456'
     result = api.user_login(test_parameter['prefix'], test_parameter['user_acc'], test_parameter['user_pass'])
-    test_parameter['user_token'] = result['token']
-    test_parameter['user_nonce'] = result['nonce']
+    #print(result)
+    test_parameter['user_token'] = result['data']['token']
+    test_parameter['user_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['liveController1_acc'], test_parameter['user_pass'])
-    test_parameter['liveController1_token'] = result['token']
-    test_parameter['liveController1_nonce'] = result['nonce']
+    test_parameter['liveController1_token'] = result['data']['token']
+    test_parameter['liveController1_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['liveController2_acc'], test_parameter['user_pass'])
-    test_parameter['liveController2_token'] = result['token']
-    test_parameter['liveController2_nonce'] = result['nonce']
+    test_parameter['liveController2_token'] = result['data']['token']
+    test_parameter['liveController2_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['liveController3_acc'], test_parameter['user_pass'])
-    test_parameter['liveController3_token'] = result['token']
-    test_parameter['liveController3_nonce'] = result['nonce']
+    test_parameter['liveController3_token'] = result['data']['token']
+    test_parameter['liveController3_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['user1_acc'], test_parameter['user_pass'])
-    test_parameter['user1_token'] = result['token']
-    test_parameter['user1_nonce'] = result['nonce']
+    test_parameter['user1_token'] = result['data']['token']
+    test_parameter['user1_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['backend_acc'], test_parameter['backend_pass'])
-    test_parameter['backend_token'] = result['token']
-    test_parameter['backend_nonce'] = result['nonce']
+    test_parameter['backend_token'] = result['data']['token']
+    test_parameter['backend_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['broadcaster_acc'], test_parameter['broadcaster_pass'])
-    test_parameter['broadcaster_token'] = result['token']
-    test_parameter['broadcaster_nonce'] = result['nonce']
+    test_parameter['broadcaster_token'] = result['data']['token']
+    test_parameter['broadcaster_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['broadcaster1_acc'], test_parameter['broadcaster1_pass'])
-    test_parameter['broadcaster1_token'] = result['token']
-    test_parameter['broadcaster1_nonce'] = result['nonce']
+    test_parameter['broadcaster1_token'] = result['data']['token']
+    test_parameter['broadcaster1_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['broadcaster2_acc'], test_parameter['broadcaster1_pass'])
-    test_parameter['broadcaster2_token'] = result['token']
-    test_parameter['broadcaster2_nonce'] = result['nonce']        
+    test_parameter['broadcaster2_token'] = result['data']['token']
+    test_parameter['broadcaster2_nonce'] = result['data']['nonce']        
     test_parameter['one_time_1'] = int(time.time()) - 5
     test_parameter['err_token'] = 'aa24385'
     test_parameter['err_nonce'] = 'nceoiw'
     test_parameter['gift_id'] = 'b0a2945a-8d2b-4f5d-924a-7dd8d3a4be6b'
     test_parameter['cs_acc'] = 'qa-cs'
     result = api.user_login(test_parameter['prefix'], test_parameter['cs_acc'], '123456')
-    test_parameter['cs_token'] = result['token']
-    test_parameter['cs_nonce'] = result['nonce']        
+    test_parameter['cs_token'] = result['data']['token']
+    test_parameter['cs_nonce'] = result['data']['nonce']        
     test_parameter['project_acc'] = 'qa-project'
     result = api.user_login(test_parameter['prefix'], test_parameter['project_acc'], '123456')
-    test_parameter['project_token'] = result['token']
-    test_parameter['project_nonce'] = result['nonce']        
+    test_parameter['project_token'] = result['data']['token']
+    test_parameter['project_nonce'] = result['data']['nonce']        
     test_parameter['market_acc'] = 'qa-market'
     result = api.user_login(test_parameter['prefix'], test_parameter['market_acc'], '123456')
-    test_parameter['market_token'] = result['token']
-    test_parameter['market_nonce'] = result['nonce']       
+    test_parameter['market_token'] = result['data']['token']
+    test_parameter['market_nonce'] = result['data']['nonce']       
     test_parameter['photo_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/6e7103c048cd11ea83b942010a8c0017.png'
     test_parameter['preview_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/5abd6f60deb711e9a49e42010a8c1fc8.jpg'
     test_parameter['video_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/5abd6f60deb711e9a49e42010a8c9fc8.jpg'
@@ -98,9 +101,41 @@ def clearOrder(db):
         sqlList.append(sqlStr) 
     dbConnect.dbSetting(db, sqlList)
 
+def clearChatBot(db):
+    sqlList = []
+    tableList = ['chatbot_switch', 'chatbot_target_user']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr) 
+    dbConnect.dbSetting(db, sqlList)
+
+def clearNotiySetting(db):
+    sqlList = []
+    tableList = ['user_notification_settings', 'notification_v2_identity_association']
+    deleteList = ['notification_v2']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr) 
+    for tableName in deleteList:
+        sqlList.append("delete from " + tableName)
+        sqlList.append("alter table " + tableName + " auto_increment = 1")
+    dbConnect.dbSetting(db, sqlList)
+
+def clearLiveshowData(db):
+    sqlList = []
+    tableList = ['liveshow_gift_history', 'liveshow_guest', 'liveshow_streaming', 'live_banner', 'live_controller', 'live_banner_v2']
+    deleteList = ['liveshow_team', 'liveshow']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr) 
+    for tableName in deleteList:
+        sqlList.append("delete from " + tableName)
+        sqlList.append("alter table " + tableName + " auto_increment = 1")
+    dbConnect.dbSetting(db, sqlList)
 
 def clearIdentityData(dbInfo):
     sqlList = []
+    result = []
     tableList = ['identity_email_register_history', 'identity_email_bind_history', 'identity_third_party', 'identity_line', 'identity_profile']
     sqlStr = "select identity_id from identity_third_party union select identity_id from identity_profile"
     result = dbConnect.dbQuery(dbInfo, sqlStr)
@@ -145,9 +180,7 @@ def clearIMInfo(db):
         sqlList.append(sqlStr)
     deleteList = ['instant_message', 'dialog_member', 'dialog', 'quota_log', 'point_consumption_history']
     for tableName in deleteList:
-        sqlStr = 'delete from ' + tableName
-        sqlList.append(sqlStr)       
-    for tableName in deleteList:
+        sqlList.append("delete from " + tableName)
         sqlList.append("alter table " + tableName + " auto_increment = 1")
     dbConnect.dbSetting(db, sqlList)
     
@@ -158,7 +191,7 @@ def clearPhoto(db):
     for i in truncateList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)
-    deleteList = ['quota_log', 'post_gift_history', 'point_consumption_history', 'photo_post']
+    deleteList = ['quota_log', 'point_consumption_history', 'photo_post']
     for tableName in deleteList:
         sqlStr = 'delete from ' + tableName
         sqlList.append(sqlStr)       

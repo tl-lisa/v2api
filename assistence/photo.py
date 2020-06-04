@@ -2,7 +2,7 @@ import json
 import requests
 import string
 import time
-from ..assistence import api
+from . import api
 
 header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 def createPhoto(token, nonce, prefix, photo_url, repeatTimes):

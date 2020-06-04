@@ -107,6 +107,7 @@ def testGetLiveList(test_input, expected):
     restext = json.loads(res.text)
     assert res.status_code // 100 == expected[0]
     if expected == 2:
+        pprint(restext)
         assert restext['data'][0].has_key('tags') == True
         assert restext['data'][0].has_key('videoUrl') == True
         assert restext['data'][0].has_key('description') == True

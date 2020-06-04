@@ -30,11 +30,12 @@ def dbQuery(hostAddr, sqlStr):
         cursor = db.cursor()
         collect = []
         try:    
-            print(sqlStr)
+            #print(sqlStr)
             cursor.execute(sqlStr)
             data = cursor.fetchall()
             for result in data:
                 collect.append(result)
+            #print(collect)
         except Exception as err:
             print("Error %s from exceute sql: %s" % (err, sqlStr))
         finally:                 

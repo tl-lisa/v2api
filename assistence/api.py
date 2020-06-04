@@ -6,8 +6,13 @@ from pprint import pprint
 
 
 def user_login(prefix, account, pwd):
-    url = prefix + '/api/v1/auth/login'
-    body = {'loginId': account, 'password': pwd}
+    url = prefix + '/api/v2/identity/auth/login'
+    body = {
+        "account": account,
+        "password": pwd,
+        "pushToken": ''
+    }
+    #print(body)
     res = requests.post(url, json=body)
     if res.status_code // 100 == 2:
         restext = json.loads(res.text)
@@ -68,8 +73,9 @@ def register(prefix, account, header):
 
 
 def change_user_mode(prefix, id, mode, header):
-    url = prefix + '/api/v1/backend/user/' + id
-    body = {'identityStatus': mode, 'id': id}
+    url = prefix + '/api/v2/backend/user/' + id
+    #print(url)
+    body = {'identityStatus': mode}
     requests.post(url, headers=header, json=body)
     #str1 = res.text
     #print(str1)
@@ -88,7 +94,7 @@ def change_roles(prefix, header, bid, rtype):
     #5:一般用戶；4:直播主
     url = prefix + '/api/v1/backend/identity/roles'
     body = {'identityId': bid, 'roleType': rtype}
-    print(body)
+    #print(body)
     res = requests.put(url, headers=header, json=body)
     if res.status_code != 200:
         print(json.loads(res.text))
@@ -122,7 +128,15 @@ def search_user(prefix, account, header):
     body = {"input": account, "page": 0, "size": 10, "statuses": []}
     res = requests.post(url, headers=header, json=body)
     json_result = json.loads(res.text)
-    return(json_result['data'][0]['id'])
+    #pprint(json_result)
+    if json_result['totalCount'] > 1:
+        for i in json_result['data']:
+            if i['loginId'] == account:
+                id = i['id']
+                break
+        return(id)
+    else:
+        return(json_result['data'][0]['id'])
 
 
 def search_master(prefix, header, body, inum, pnum):
@@ -152,7 +166,9 @@ def get_room_info(prefix, bid, header):
 
 def get_load_balance(prefix, header):
     url= prefix + '/api/v1/live/loadBalance/'
+    #print(url)
     res = requests.get(url, headers=header)
+    #print(res.status_code)
     if res.status_code != 200:
         json_result = ''
     else:

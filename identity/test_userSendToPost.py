@@ -1,5 +1,6 @@
 #mileston17 create '/api/v2/identity/sendGift' #775 
 #mileston18 多加回傳欄位：postid #831
+#mileston23 多加回傳欄位： 送禮後使用者剩餘點數； 該動態貼文總計收禮點數
 import json
 import requests
 import pymysql
@@ -25,18 +26,15 @@ cover_list = ['https://d3eq1e23ftm9f0.cloudfront.net/namecard/photo/460d7772e0ec
 
 def init():
     initdata.set_test_data(env, test_parameter)    
-    header['X-Auth-Token'] = test_parameter['backend_token']
-    header['X-Auth-Nonce'] = test_parameter['backend_nonce']         
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))
-    initdata.resetData(test_parameter['db'], idlist[0])
+    initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [
+        test_parameter['broadcaster_acc'], test_parameter['broadcaster1_acc'],  test_parameter['user_acc'], test_parameter['user1_acc']], idlist)
+    initdata.clearIMInfo(test_parameter['db'])
+    initdata.clearPhoto(test_parameter['db']) 
 init()
 
 def f():
-    giftId = 100  #'234df236-8826-4938-8340-32f39df43ed1'; category=108(post_gift)
-    giftId1 = 64  #'e5741caa-2924-4e22-a955-02a4f50f382d'; category=65(非post_gift)
+    giftId = 887  #'234df236-8826-4938-8340-32f39df43ed1'; category=108(post_gift)
+    giftId1 = 736  #'e5741caa-2924-4e22-a955-02a4f50f382d'; category=65(非post_gift)
     testData = []
     photoId = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idlist[0])
     testData = [([test_parameter['user_token'], test_parameter['user_nonce'], 10000, giftId, photoId[0]], 2),
@@ -51,12 +49,12 @@ def f():
 
 class TestSendGiftToPhoto():
     giftUUID = '234df236-8826-4938-8340-32f39df43ed1' 
+    postGetTotalPoint = 0
     photo.createPhoto(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], test_parameter['photo_url'], 3)
     photoId = photo.getPhotoList(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'] , test_parameter['prefix'], idlist[0])
 
     @pytest.mark.parametrize("test_input, expected", f())
     def testSendGift(self, test_input, expected):
-        pprint(test_input)
         sqlList = []
         sqlList.append("update remain_points set remain_points = " + str(test_input[2]) + " where identity_id = '" + idlist[2] + "'")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
@@ -68,11 +66,13 @@ class TestSendGiftToPhoto():
         apiName = '/api/v2/identity/sendGift'
         body = {'giftId': test_input[3], 'postId': test_input[4]}
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
-        pprint(json.loads(res.text))
+        #pprint(json.loads(res.text))
         assert res.status_code // 100 == expected
         if expected == 2:
             restext = json.loads(res.text)
+            self.postGetTotalPoint += 1000
             assert restext['data']['pointLeft'] == 9000
+            assert restext['data']['postPoint'] == self.postGetTotalPoint
             sqlStr = "select experience, identity_id from user_experience where identity_id in ('" + idlist[0] + "', '" + idlist[2]  + "') order by identity_id"     
             afExperience = dbConnect.dbQuery(test_parameter['db'], sqlStr)
             for i in range(2):

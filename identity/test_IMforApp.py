@@ -33,15 +33,11 @@ def createMessage(recevier, sender, header, msgtype, content, photo_url, preview
 
 def setup_module():
     Auth = []
-    initdata.set_test_data(env, test_parameter)   
-    header['X-Auth-Token'] = test_parameter['backend_token']
-    header['X-Auth-Nonce'] = test_parameter['backend_nonce']                  
-    idList.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header))
-    idList.append(api.search_user(test_parameter['prefix'], test_parameter['backend_acc'], header))
-    idList.append(api.search_user(test_parameter['prefix'], test_parameter['liveController1_acc'], header))
-    idList.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
-    idList.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))    
-    initdata.resetData(test_parameter['db'], idList[0])
+    initdata.set_test_data(env, test_parameter)        
+    initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [test_parameter['broadcaster_acc'],
+    test_parameter['backend_acc'], test_parameter['liveController1_acc'], test_parameter['user_acc'], test_parameter['user1_acc']], idList)             
+    initdata.clearFansInfo(test_parameter['db'])
+    initdata.clearIMInfo(test_parameter['db'])
     Auth.extend([test_parameter['backend_token'], test_parameter['backend_nonce'], test_parameter['liveController1_token'], test_parameter['liveController1_nonce']])
     for i in range(2):       
         header['X-Auth-Token'] = Auth[i * 2]
@@ -251,12 +247,11 @@ class TestgetHistory():
         apiName = '/api/v2/identity/instantMessage/history?dialogId={id}&item=10&page=1'
         apiName = apiName.replace('{id}', self.dialogIdList[0])
         header['X-Auth-Token'] = test_parameter['user_token']
-        header['X-Auth-Nonce'] = test_parameter['user_nonce']      
+        header['X-Auth-Nonce'] = test_parameter['user_nonce']     
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)       
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
         assert restext['data'][0]['createAt'] >= restext['data'][1]['createAt']
-        assert restext['data'][0]['sender'] == idList[1]
         assert restext['data'][0]['receiver'] == idList[3]
         assert restext['data'][0]['msgType'] == 'video'
         assert restext['data'][0]['previewUrl'] == test_parameter['preview_url']
@@ -281,13 +276,13 @@ class TestgetHistory():
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
         assert len(restext['data']) == 1
-        assert restext['totalCount'] == 3
+        assert restext['totalCount'] == 2
         apiName = apiName.replace('page=1', 'page=2')
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)       
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
         assert len(restext['data']) == 1
-        assert restext['totalCount'] == 3
+        assert restext['totalCount'] == 2
         
     def testWithoutAuth(self):
         #不能取得非本人的聊天資訊
@@ -316,13 +311,13 @@ class TestgetHistory():
         sqlList.append("update instant_message set create_at = '" + UpdateDatetime.strftime('%Y-%m-%d %H:%M:%S') + "' where dialog_id = '" + self.dialogIdList[0] + "'")
         dbConnect.dbSetting(test_parameter['db'], sqlList)
         apiName = apiName.replace('{id}', self.dialogIdList[0])
-        print(apiName)
+        #print(apiName)
         header['X-Auth-Token'] = test_parameter['user_token']
         header['X-Auth-Nonce'] = test_parameter['user_nonce']      
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)       
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
-        assert restext['totalCount'] == 6
+        assert restext['totalCount'] == 2
         changelist.append(idList[3])
         header['X-Auth-Token'] = test_parameter['backend_token']
         header['X-Auth-Nonce'] = test_parameter['backend_nonce']   
@@ -332,7 +327,7 @@ class TestgetHistory():
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)       
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
-        assert restext['totalCount'] == 6
+        assert restext['totalCount'] == 2
     
 
     def testCSGetOverhalfYear(self):
@@ -348,7 +343,7 @@ class TestgetHistory():
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)       
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
-        assert restext['totalCount'] == 6
+        assert restext['totalCount'] == 2
         sqlList.clear()
         UpdateDatetime = datetime.fromtimestamp(int(time.time())) - timedelta(days=184)
         sqlList.append("update instant_message set create_at = '" + UpdateDatetime.strftime('%Y-%m-%d %H:%M:%S') + "' where dialog_id = '" + self.dialogIdList[0] + "'")
@@ -388,7 +383,7 @@ class TestgetHistory():
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)     
         restext = json.loads(res.text)
         assert res.status_code // 100 == 2
-        assert restext['totalCount'] == 8
+        assert restext['totalCount'] == 4
         assert restext['data'][0]['createAt'] > restext['data'][1]['createAt']
         assert restext['data'][0]['sender'] == idList[3]
         assert restext['data'][0]['receiver'] == idList[2]
@@ -504,15 +499,13 @@ class TestMessageToLiveMaster():
         bfExperience = self.getDBData(sqlStr)
         self.updatePoint(20, idList[3])
         #直播主封鎖該名user;直播主聊天室無該名user,但該user卻可看到聊天室
-        apiName = '/api/v2/identity/instantMessage/roomlist?userId={userId}&item=20&page=1'
-        apiName = apiName.replace('{userId}', idList[3])
+        apiName = '/api/v2/identity/instantMessage/roomList?item=20&page=1'
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         assert res.status_code // 100 == 2
         restext = json.loads(res.text)
-        assert restext['data'] == []
+        assert idList[3] not in restext['data']
         header['X-Auth-Token'] = test_parameter['user_token']
         header['X-Auth-Nonce'] = test_parameter['user_nonce'] 
-        apiName = apiName.replace('{userId}', idList[0])
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         assert res.status_code // 100 == 2
         restext = json.loads(res.text)

@@ -1,4 +1,5 @@
 #milestone19 email註冊流程 906/907
+#milestone23 新註冊用戶未填nickname需自動帶預設值'初樂用戶 ' #1245
 import json
 import requests
 import pymysql
@@ -181,9 +182,10 @@ class TestActivateCode():
         assert res.status_code // 100 == expected
         if res.status_code // 100 == 2:
             restext = json.loads(res.text)
-            checkList = ['nonce', 'token', 'idToken']
-            for i in checkList:
-                assert i in restext['data']
+            sqlStr = "select nickname from identity where token = '" + restext['data']['token'] + "' and  nonce = '" + restext['data']['nonce'] + "'"
+            record = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+            #pprint(record)
+            assert '初樂用戶 ' in record[0][0]
             
         
             

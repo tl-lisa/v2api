@@ -5,7 +5,7 @@ import json
 import time
 import requests
 from python_settings import settings
-from ..assistence import setting as mysetting
+from . import setting as mysetting
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
@@ -43,7 +43,10 @@ def get_token(auth_code):
     return (idToken, accessToken)
 
 def line_login():
-    Browser = webdriver.Chrome()
+    chromedriver = '/usr/local/bin/chromedriver'
+    print('call browser')
+    Browser = webdriver.Chrome(chromedriver)
+    print('open browser')
     Browser.get(create_auth_url())
     Browser.find_element_by_name('tid').send_keys(settings.lineId)
     Browser.find_element_by_name('tpasswd').send_keys(settings.linePasswd)

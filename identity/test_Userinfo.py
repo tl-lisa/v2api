@@ -1,3 +1,7 @@
+#milestone14 查詢他人個人資訊
+#milestone22 若無頭像及暱稱則使用預設值
+#hotfix userInfo加入cache 30秒，若是直播主或是使用者更新myinfo即需等30秒後才能取得新的資訊
+#milestone23 新增user level
 import json
 import requests
 import time
@@ -33,7 +37,7 @@ def teardown_module():
 testData = [
     ('user query', 'user_token', 'user_nonce', 2, 'ROLE_LIVE_CONTROLLER',2),
     ('backend user query', 'backend_token', 'backend_nonce', 0, 'ROLE_MASTER', 2),
-    ('boradcaster query', 'brodcaster_token', 'broadcaster_nonce', 1, 'ROLE_BUSINESS_MANAGER', 2),
+    ('boradcaster query', 'broadcaster_token', 'broadcaster_nonce', 1, 'ROLE_BUSINESS_MANAGER', 2),
     ('cs query', 'liveController1_token', 'liveController1_nonce', 3, 'ROLE_USER', 2),
     ('uuid is wrong', 'user_token', 'user_nonce', 4, '', 4),
     ('token/ nonce is wrong', 'err_token', 'err_nonce', 2, '', 4)
@@ -44,9 +48,13 @@ def testGetUserInfo(scenario, token, nonce, idIndex, role, expect):
     apiName = '/api/v2/identity/userInfo/'
     header['X-Auth-Token'] = test_parameter[token]
     header['X-Auth-Nonce'] = test_parameter[nonce]   
+    #print(apiName + idList[idIndex])
     res = api.apiFunction(test_parameter['prefix'], header, apiName + idList[idIndex], 'get', None)
     assert res.status_code // 100 == expect
     if expect == 2:
         restext = json.loads(res.text)
         assert restext['data']['roles'][0]['name'] == role
         assert len(restext['data']['profilePicture']) > 0
+        assert len(restext['data']['nickname']) > 0
+        assert len(restext['data']['userLevel']['levelId']) > 0
+        assert restext['data']['userLevel']['levelNum'] >= 0
