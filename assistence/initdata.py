@@ -121,10 +121,11 @@ def clearNotiySetting(db):
         sqlList.append("alter table " + tableName + " auto_increment = 1")
     dbConnect.dbSetting(db, sqlList)
 
-def clearLiveshowData(db):
+def clearLiveData(db):
     sqlList = []
-    tableList = ['liveshow_gift_history', 'liveshow_guest', 'liveshow_streaming', 'live_banner', 'live_controller', 'live_banner_v2']
-    deleteList = ['liveshow_team', 'liveshow']
+    tableList = ['liveshow_gift_history', 'liveshow_guest', 'liveshow_streaming', 'live_banner', 'live_controller', 'live_banner_v2',
+    'live_room_gift', 'zego_master', 'play_event_log', 'live_master_statistics', 'live_room_log', 'top_sort']
+    deleteList = ['liveshow_team', 'liveshow', 'live_room']
     for i in tableList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr) 

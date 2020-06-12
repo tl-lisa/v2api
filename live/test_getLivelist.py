@@ -5,8 +5,6 @@ import time
 import string
 import pytest
 import socket
-import multiprocessing as mp
-import traceback
 from assistence import api
 from assistence import initdata
 from assistence import dbConnect
@@ -19,113 +17,80 @@ test_parameter = {}
 cards = []
 idlist = []
 header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
-zegoInfo = []
-chinaInfo = []
+zegoInfo = [0, 0]
 
 
-def init():
+def setup_module():
+    sqlList = []
     create_At = int((datetime.today() - timedelta(hours=8)).strftime('%s'))
     initdata.set_test_data(env, test_parameter)    
-    header['X-Auth-Token'] = test_parameter['backend_token']
-    header['X-Auth-Nonce'] = test_parameter['backend_nonce'] 
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))
-    initdata.resetData(test_parameter['db'], idlist[0])
-    sqlList = ["insert into zego_master values('" + idlist[0] + "')"]
-    sqlStr = "insert into top_sort values('" + idlist[0] + "', FROM_UNIXTIME(" + str(create_At) + ", '%Y-%m-%d %H:%i:%s'), 'lisa', FROM_UNIXTIME(" + str(create_At) + ", '%Y-%m-%d %H:%i:%s'), 'lisa', 3, 0)" 
+    initdata.clearFansInfo(test_parameter['db'])
+    initdata.clearLiveData(test_parameter['db'])
+    initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [
+    test_parameter['broadcaster_acc'], test_parameter['broadcaster1_acc'], test_parameter['user_acc'], test_parameter['user1_acc']
+    ], idlist )
+    for i in range(2):
+        sqlStr = "insert into zego_master values('" + idlist[i] + "')"
+        sqlList.append(sqlStr)
+    sqlStr = "insert into top_sort values('" + idlist[0] + "', FROM_UNIXTIME(" + str(create_At) 
+    sqlStr += ", '%Y-%m-%d %H:%i:%s'), 'lisa', FROM_UNIXTIME(" + str(create_At) + ", '%Y-%m-%d %H:%i:%s'), 'lisa', 3, 0)" 
     sqlList.append(sqlStr)
     dbConnect.dbSetting(test_parameter['db'], sqlList)
  
+def teardown_module():
+    for i in range (1, (len(zegoInfo) // 2)):
+        chatlib.leave_room(zegoInfo[i * 2], zegoInfo[i * 2  + 1])
 
-def openZego():
-    header1= {'Connection': 'Keep-alive', 'X-Auth-Token': test_parameter['broadcaster_token'], 'X-Auth-Nonce': test_parameter['broadcaster_nonce']}
+
+def openZego(token, nonce):
+    header1= {'Connection': 'Keep-alive', 'X-Auth-Token': test_parameter[token], 'X-Auth-Nonce': test_parameter[nonce]}
     apiName = '/api/v2/liveMaster/zego/liveRoom'
     res = api.apiFunction(test_parameter['prefix'], header1, apiName, 'post', {})
     restext = json.loads(res.text)
     roomId = restext['data']['roomId']
+    zegoInfo.append(roomId)
     sockinfo = api.get_load_balance(test_parameter['prefix'], header1)
     sip = sockinfo['socketIp']
     sport = int(sockinfo['socketPort'])
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    zegoInfo.append(sock)
     server_address = (sip, sport)
     sock.connect(server_address)
     chatlib.chat_room_auth(sock, header1)  
     chatlib.enterZego(sock, roomId)
-    return(sock, roomId)
+    return
 
+#scenario, token, nonce, condition, action, master_token, master_nonce, zegoInfoindex, totalCount, masterList, roomId, roomStatus, expected
+testData = [
+    ('one master on air, and user get list', 'user_token', 'user_nonce', 'item=5&page=1', 'open', 'broadcaster1_token', 'broadcaster1_nonce', 0, 1, [1], [1], [1], 2),
+    ('two master on air, and user get list', 'user1_token', 'user1_nonce', 'item=5&page=1', 'open', 'broadcaster_token', 'broadcaster_nonce', 0, 2, [0, 1], [2,1], [1, 1], 2),
+    ('query tagGroup = 5', 'user1_token', 'user1_nonce', 'tagGroup=5&item=5&page=1', '', 'broadcaster_token', 'broadcaster_nonce', 0, 1, [1], [1], [1], 2),
+    ('one on air, the other close', 'user1_token', 'user1_nonce', 'item=5&page=1', 'close', 'broadcaster_token', 'broadcaster_nonce', 2, 2, [1, 0], [1, 2], [1, 0], 2),
+    ('query by onAir', 'user1_token', 'user1_nonce', 'item=5&page=1&roomStatus=1', '', 'broadcaster_token', 'broadcaster_nonce',  0, 1, [1], [1], [1], 2),
+    ('query tagGroup = 1', 'user1_token', 'user1_nonce', 'tagGroup=1&item=5&page=1', '', 'broadcaster1_token', 'broadcaster1_nonce',  0, 0, [], [], [], 2),
+    ('wrong auth', 'err_token', 'err_nonce', 'tagGroup=5&item=5&page=1', '', 'broadcaster_token', 'broadcaster_nonce', 0, 1, [1], [1], [1], 4)
+]
 
-def openChina():
-    header2= {'Connection': 'Keep-alive', 'X-Auth-Token': test_parameter['broadcaster1_token'], 'X-Auth-Nonce': test_parameter['broadcaster1_nonce']}
-    sockinfo = api.get_load_balance(test_parameter['prefix'], header2)
-    sip = sockinfo['socketIp']
-    sport = int(sockinfo['socketPort'])
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = (sip, sport)
-    sock.connect(server_address)
-    chatlib.chat_room_auth(sock, header2)  
-    rid = chatlib.new_room(sock, 'China line')
-    return(sock, rid)
-
-init()
-zegoInfo = openZego()
-chinaInfo = openChina()
-
-def teardown_module():
-    chatlib.leave_room(zegoInfo[1], zegoInfo[0])
-    chatlib.leave_room(chinaInfo[1], chinaInfo[0])
-
-def createTestdata():
-    print('creatTestdata')
-    testData = [
-        ([test_parameter['user_token'], test_parameter['user_nonce'], '', 10, 1, ''], [2, 2]),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], '', 10, 1, 'zego'], [2, 2]),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], '', 10, 1, 'china'], [2, 2]),
-        ([test_parameter['user_token'], test_parameter['user_nonce'], '', 1, 1, ''], [2, 1]), 
-        ([test_parameter['user_token'], test_parameter['user_nonce'], '', 1, 2, ''], [2, 1]), 
-        ([test_parameter['err_token'], test_parameter['err_nonce'], '', 10 ,1, ''], [4, 0])
-    ]
-    return(testData)
-
-@pytest.mark.parametrize("test_input, expected", createTestdata())
-def testGetLiveList(test_input, expected):
-    header['X-Auth-Token'] = test_input[0]
-    header['X-Auth-Nonce'] = test_input[1] 
-    if test_input[5] == 'zego':
-        chatlib.leave_room(zegoInfo[1], zegoInfo[0])
-        time.sleep(5)
-    elif test_input[5] == 'china':
-        chatlib.leave_room(chinaInfo[1], chinaInfo[0])
-        time.sleep(5)
-    if test_input[2] == '':
-        apiName = '/api/v2/live/list/liveRoom?' + 'item=' + str(test_input[3]) + '&page=' + str(test_input[4])
-    else:
-        apiName = '/api/v2/live/list/liveRoom?' + test_input[2] + '&item=' + str(test_input[3]) + '&page=' + str(test_input[4])
-    #print(apiName)
+@pytest.mark.parametrize("scenario, token, nonce, condition, action, master_token, master_nonce, index, totalCount, masterList, roomId, roomStatus, expected", testData)
+def testGetLiveList(scenario, token, nonce, condition, action, master_token, master_nonce, index, totalCount, masterList, roomId, roomStatus, expected):
+    header['X-Auth-Token'] = test_parameter[token]
+    header['X-Auth-Nonce'] = test_parameter[nonce] 
+    actionDic = {'open': openZego, 'close': chatlib.leave_room}
+    parameterDic = {'open': [master_token, master_nonce], 'close': [zegoInfo[index * 2], zegoInfo[index * 2 + 1]]}
+    actionDic[action](parameterDic[action][0], parameterDic[action][1]) if action != '' else None
+    time.sleep(5)
+    apiName = '/api/v2/live/list/liveRoom?' + condition
     res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', {})
     restext = json.loads(res.text)
-    assert res.status_code // 100 == expected[0]
-    if expected == 2:
+    assert res.status_code // 100 == expected
+    if all([expected == 2, totalCount >0]):
         pprint(restext)
-        assert restext['data'][0].has_key('tags') == True
-        assert restext['data'][0].has_key('videoUrl') == True
-        assert restext['data'][0].has_key('description') == True
-        if test_input[3] > 1:
-            if test_input[5] != 'zego':
-                assert restext['totalCount'] == expected[1]
-                assert restext['data'][0]['liveMasterId'] == idlist[0]
-                assert restext['data'][1]['liveMasterId'] == idlist[1] 
-            else:
-                assert restext['totalCount'] == expected[1]
-                assert restext['data'][0]['liveMasterId'] == idlist[1]
-                assert restext['data'][1]['liveMasterId'] == idlist[0]
-        else:
-            if test_input[3] == 1:
-                assert restext['totalCount'] == expected[1]
-                assert restext['data'][0]['liveMasterId'] == idlist[0]
-            else:
-                assert restext['totalCount'] == expected[1]
-                assert restext['data'][0]['liveMasterId'] == idlist[1]
-
-
+        assert 'description' in restext['data'][0]
+        assert 'nickname' in restext['data'][0]  
+        assert 'roomPoint' in restext['data'][0]       
+        assert restext['totalCount'] == totalCount
+        for i in range(totalCount):
+            assert restext['data'][i]['liveMasterId'] == idlist[masterList[i]]
+            assert restext['data'][i]['roomId'] ==  zegoInfo[roomId[i] * 2]
+            assert restext['data'][i]['roomStatus'] == roomStatus[i]
+            assert len(restext['data'][0]['profilePicture']) > 0

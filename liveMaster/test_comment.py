@@ -1,3 +1,4 @@
+#milestone24 動態評論禁詞，若是評論中有禁詞出現會整句吃掉不新增進DB #1309
 import time
 import json
 import pytest
@@ -29,6 +30,7 @@ def getTestData(testType):
             ('livecontroller1 add comment', 'liveController1_token', 'liveController1_nonce', 'livecontroller 1add comment', 2),
             ('backend user add comment', 'backend_token', 'backend_nonce', 'backend user add comment', 2),
             ('user add comment', 'user_token', 'user_nonce', 'user add comment', 2),
+            ('user add comment', 'user_token', 'user_nonce', 'user add forbidden words 代儲', 2),
             ('user1 add comment', 'user1_token', 'user1_nonce', 'user1 add comment', 2),
             ('pid not exist', 'user1_token', 'user1_nonce', 'user1 add comment', 4),
             ('auth wrong', 'err_token', 'err_nonce', '', 4)
@@ -70,6 +72,11 @@ class TestliveComment():
         restext = json.loads(res.text)
         pprint(restext)
         self.pid = str(restext['data'][0]['id'])
+        header['X-Auth-Token'] = test_parameter['backend_token']
+        header['X-Auth-Nonce'] = test_parameter['backend_nonce']
+        apiName = '/api/v2/backend/forbidden'
+        body = {'word': '代儲'}
+        api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
 
     def teardown_method(self):
         header['X-Auth-Token'] = test_parameter['broadcaster_token']
