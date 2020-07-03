@@ -92,12 +92,12 @@ def add_point(prefix, id, header):
 
 def change_roles(prefix, header, bid, rtype):
     #5:一般用戶；4:直播主
-    url = prefix + '/api/v1/backend/identity/roles'
-    body = {'identityId': bid, 'roleType': rtype}
-    #print(body)
-    res = requests.put(url, headers=header, json=body)
+    url = prefix + '/api/v2/backend/user/role'
+    body = {'ids': bid, 'role': rtype}
+    res = requests.patch(url, headers=header, json=body)
     if res.status_code != 200:
         print(json.loads(res.text))
+    #print(res.status_code)
     return(res)
 
 
@@ -257,32 +257,6 @@ def upload_image(prefix, header1, filepath, file_name, file_addr):
     return(res)
 
 
-def add_photopost(prefix, header1, body):
-    url = prefix + '/api/v2/liveMaster/photoPost'    
-    res = requests.post(url, json=body, headers=header1)
-    return (res)
-
-
-def operator_photopost(prefix, header1, way, post_id, content):
-    url = prefix + '/api/v2/liveMaster/photoPost/' + str(post_id)
-    if way == 'get':
-        res = requests.get(url, headers=header1)
-    elif way == 'put':
-        res = requests.put(url, headers=header1, json=content)
-    else:
-        #print('delete %s'%url)
-        res = requests.delete(url, headers=header1)
-        #print(res.text)
-    return(res)
-    
-def get_photo_list(prefix, header1, master_id, inum, pnum):
-    url = prefix + '/api/v2/liveMaster/' + master_id + '/photoPost?item=' + inum + '&page=' + pnum
-    #print(url)
-    res = requests.get(url, headers=header1)
-    #print('get photo list(%d)'%res.status_code)
-    return(res)
-
-
 def get_comment_list(prefix, header1, post_id, inum, pnum):
     url = prefix + '/api/v2/liveMaster/photoPost/' + post_id + '/comment?item=' + str(inum) + '&page=' + str(pnum)
     res = requests.get(url, headers=header1)
@@ -350,17 +324,36 @@ def add_photo_comment(prefix, header1, pid, comment):
     res = requests.post(url, headers=header1, json=body)
     return(res)
 
+def changeRole(prefix, token, nonce, idList, roleType):
+    #5:一般用戶；4:直播主
+    header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
+    url = '/api/v2/backend/user/role'
+    body = {'ids': idList, 'role': roleType}
+    res = apiFunction(prefix, header, url, 'patch', body)
+    return(res)
+
+def blockUser(prefix, token, nonce, userId):
+    header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
+    url = '/api/v2/liveMaster/blockUser'
+    body = {'userId': userId}
+    res = apiFunction(prefix, header, url, 'post', body)
+    return(res)
+
 def apiFunction(prefix, head, apiName, way, body):
     url = prefix + apiName  
     #print(head)
-    #print('url = %s, method= %s'% (url, way))   
+    print('url = %s, method= %s'% (url, way))   
     if way in ('get', 'delete'):
         if 'Content-Type' in head.keys():
             del head['Content-Type']
     else:
         if 'Content-Type' not in head.keys():
             head['Content-Type'] = 'application/json'
-    #print(body)
+    print(body) if body else None
     if way == 'post':
         res1 = requests.post(url, headers=head, json=body)
     elif way == 'put':
@@ -371,6 +364,5 @@ def apiFunction(prefix, head, apiName, way, body):
         res1 = requests.delete(url, headers=head)    
     elif way == 'patch':
         res1 = requests.patch(url, headers=head, json=body)
-    #print('statusCode=%d'%res1.status_code)
-    #pprint(json.loads(res1.text))
+    pprint(json.loads(res1.text))
     return res1 

@@ -1,5 +1,6 @@
 #/api/v2/identity/gift/list?giftCategoryId=
 #mileston 18 加入軟刪及判斷delete_at,並且使用V2 table
+#milestone25 #1445 加入二個參數isMultiple：是否為連擊禮物；multiples：如果是可以連發的禮物，每點一次時變動的數量級距
 import json
 import requests
 import pymysql
@@ -77,5 +78,7 @@ class TestGetGiftCategory():
                         assert restext[i]['url'] == dbResult[i][4]
                         assert restext[i]['multiple'] == dbResult[i][5]
                         assert restext[i]['order_seq'] == dbResult[i][6]
+                        assert restext[i]['isMultiple'] != None
+                        assert restext[i]['multiples'] != None
             else:
                  assert restext['totalCount'] == 0

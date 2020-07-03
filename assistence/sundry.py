@@ -130,6 +130,12 @@ def Openroom(env, head, opentime, isZego, roomId, roomtitle, sleeptime):
     except Exception as e:
         print(e)
 
+def clearCache(hostAddr):
+    keyfile = '../assistence/lisakey'  
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostAddr, username='lisa', key_filename=keyfile)
+    cmd = 'redis-cli flushdb;'
 
 def execut_calculate_statistics(hostAddr):
     keyfile = '../assistence/lisakey'  

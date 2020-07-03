@@ -5,28 +5,32 @@ import time
 from . import api
 
 header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
-def createPhoto(token, nonce, prefix, photo_url, repeatTimes):
-    #print('createPhoto')
+def createBody(typeDesc, photoPath, content, previewPath, videoPath, giftCategoryId):
+    body = {}
+    if typeDesc != '':
+        body['type'] = typeDesc
+    if giftCategoryId != '':
+        body['giftCategoryId'] = int(giftCategoryId)
+    body['photoPath'] = photoPath
+    body['content'] = content
+    body['videoPath'] = videoPath
+    body['previewPath'] = previewPath
+    return body
+
+def createPhoto(token, nonce, prefix, body):
+    apiName = '/api/v2/liveMaster/photoPost' 
     header['X-Auth-Token'] = token
     header['X-Auth-Nonce'] = nonce
-    for i in range(repeatTimes):
-        time.sleep(1)
-        content = 'test info ' + str(i) 
-        body = {'photoPath': photo_url,  'content': content} 
-        api.add_photopost(prefix, header, body)
-        #print(res.status_code)
+    res = api.apiFunction(prefix, header, apiName, 'post', body)
+    return res
+       
 
-
-def getPhotoList(token, nonce, prefix, liveMasterid):
-    photoId = []
+def getPhotoList(token, nonce, prefix, liveMasterid, items, pages):
+    apiName = '/api/v2/liveMaster/' +liveMasterid + '/photoPost?item=' + str(items) + '&page=' + str(pages)
     header['X-Auth-Token'] = token
     header['X-Auth-Nonce'] = nonce
-    res = api.get_photo_list(prefix, header, liveMasterid, '10', '1')
-    restext = json.loads(res.text)
-    #print(restext)
-    for i in restext['data']:
-        photoId.append(i['id'])
-    return(photoId)
+    res = api.apiFunction(prefix, header, apiName, 'get', None)
+    return res
 
 
 def sendPhotoGift(token, nonce, prefix, photoId, giftId):
@@ -35,7 +39,8 @@ def sendPhotoGift(token, nonce, prefix, photoId, giftId):
     apiName = '/api/v2/identity/sendGift'
     body = {'giftId': giftId, 'postId': photoId}
     res = api.apiFunction(prefix, header, apiName, 'post', body)
-    print(json.loads(res.text))
+    #print(json.loads(res.text))
+    return res
 
 
 def likePhoto(token, nonce, prefix, photoId, likenum):
@@ -43,12 +48,35 @@ def likePhoto(token, nonce, prefix, photoId, likenum):
     header['X-Auth-Nonce'] = nonce
     body = {'likes': likenum}
     apiName = '/api/v2/liveMaster/photoPost/' + photoId + '/like'         
-    api.apiFunction(prefix, header, apiName, 'post', body) 
+    res = api.apiFunction(prefix, header, apiName, 'post', body) 
+    return res
 
 
 def addComment(token, nonce, prefix, photoId, comment):
     header['X-Auth-Token'] = token
     header['X-Auth-Nonce'] = nonce
-    apiName = '/api/v2/liveMaster/photoPost/' + photoId + '/comment'
+    apiName = '/api/v2/liveMaster/photoPost/' + str(photoId) + '/comment'
     body = {'comment' : comment}
-    api.apiFunction(prefix, header, apiName, 'post', body)
+    res = api.apiFunction(prefix, header, apiName, 'post', body)
+    return res
+
+def delPhoto(token, nonce, prefix, photoId):
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
+    apiName = '/api/v2/liveMaster/photoPost/' + photoId 
+    res = api.apiFunction(prefix, header, apiName, 'delete', None)
+    return res
+
+def SpecificalPhoto(token, nonce, prefix, photoId):
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
+    apiName = '/api/v2/liveMaster/photoPost/' + str(photoId)
+    res = api.apiFunction(prefix, header, apiName, 'get', None)
+    return res
+
+def updatePhoto(token, nonce, prefix, photoId, body):
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
+    apiName = '/api/v2/liveMaster/photoPost/' + str(photoId)
+    res = api.apiFunction(prefix, header, apiName, 'put', body)
+    return res

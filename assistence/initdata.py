@@ -4,10 +4,9 @@ import sys
 from . import api
 from . import dbConnect
 
-sys.dont_write_bytecode = True
-
 
 def set_test_data(env, test_parameter):    
+    #print('set_test_data')
     if env == 'QA':
         test_parameter['prefix'] = 'http://35.194.187.187'
         test_parameter['db'] = '35.194.187.187'
@@ -73,8 +72,8 @@ def set_test_data(env, test_parameter):
     test_parameter['market_token'] = result['data']['token']
     test_parameter['market_nonce'] = result['data']['nonce']       
     test_parameter['photo_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/6e7103c048cd11ea83b942010a8c0017.png'
-    test_parameter['preview_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/5abd6f60deb711e9a49e42010a8c1fc8.jpg'
-    test_parameter['video_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/5abd6f60deb711e9a49e42010a8c9fc8.jpg'
+    test_parameter['preview_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/096ee460b45c11eab2d142010a8c0017.png'
+    test_parameter['video_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/vedio/ef79cfbab45c11eab2d142010a8c0017.mp4'
     test_parameter['photo1_url'] = 'https://d3eq1e23ftm9f0.cloudfront.net/story/photo/537c11b848cd11ea83b942010a8c0017.png'
     header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
     changelist = [] 
@@ -84,6 +83,26 @@ def set_test_data(env, test_parameter):
     changelist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
     api.change_roles(test_parameter['prefix'], header, changelist, '4') #轉回直播主
     return
+
+def clearSticker(db):
+    sqlList = []
+    tableList = ['sticker']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)   
+    deleteList = ['sticker_group'] 
+    for tableName in deleteList:
+        sqlList.append("delete from " + tableName)
+        sqlList.append("alter table " + tableName + " auto_increment = 1")
+    dbConnect.dbSetting(db, sqlList)
+
+def clearAD(db):
+    sqlList = []
+    tableList = ['ad_banner']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)   
+    dbConnect.dbSetting(db, sqlList)
 
 def initIdList(prefix, token, nonce, accountList, idList):
     header  = {}

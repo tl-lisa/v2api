@@ -40,8 +40,7 @@ def join_room(rid, fpath, sock):
 
 
 def leave_room(rid, sock):
-    room = {'action': 'LEAVE_ROOM', 'data': {'roomId': 0}}
-    room['data']['roomId'] = rid
+    room = {'action': 'LEAVE_ROOM', 'data': {'roomId': rid}}
     pprint(room)
     room_json = json.dumps(room) + '\n'
     sock.send(room_json.encode('utf-8'))
