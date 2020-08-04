@@ -53,7 +53,7 @@ class TestnameCard():
         header['X-Auth-Nonce'] = test_parameter['broadcaster_nonce']
         # A直播主去修改B直播主的cover
         res = api.update_cover(test_parameter['prefix'], header1, cards[1]['id'])
-        assert res.status_code // 100 == 2
+        assert res.status_code // 100 == 4
         # 直播主自己指定正確的cover
         res = api.update_cover(test_parameter['prefix'], header, cards[1]['id'])
         assert res.status_code // 100 == 2
@@ -137,6 +137,7 @@ class TestnamecardLike():
         # uid為直播主,like數大於1000以1000計      
         res = api.set_namecard_like(test_parameter['prefix'], self.user_header, self.mid, 1001)
         assert res.status_code //100 == 2
+        time.sleep(30)
         res = api.namecard_operator(test_parameter['prefix'], self.user_header, 'get', self.mid, None)
         result1 = json.loads(res.text)  
         assert result1['data']['photoLikeCount'] == self.totalLike + 1000 
@@ -156,7 +157,7 @@ class TestnamecardLike():
         #未設profile的get不應有問題
         res = api.namecard_operator(test_parameter['prefix'], self.user_header, 'get', self.mid2,'')
         restext = json.loads(res.text)
-        pprint(restext)
+        #pprint(restext)
         assert res.status_code == 200
         assert restext['data']['liked'] == False
 
@@ -164,3 +165,11 @@ class TestnamecardLike():
         #未設profile送出like不會有問題
         res = api.set_namecard_like(test_parameter['prefix'], self.user1_header, self.mid2, 100)
         assert res.status_code == 200
+
+    def test_userInBlack(self):
+        #使用者在該直播主的黑名單內，即無法取得該名直播主的名片
+        api.apiFunction(test_parameter['prefix'], self.broad_header, '/api/v2/liveMaster/blockUser', 'post', {'userId': self.uid})
+        res = api.namecard_operator(test_parameter['prefix'], self.user_header, 'get', self.mid,'')
+        restext = json.loads(res.text)
+        pprint(restext)
+        assert res.status_code == 404

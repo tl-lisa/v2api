@@ -47,7 +47,7 @@ def likePhoto(token, nonce, prefix, photoId, likenum):
     header['X-Auth-Token'] = token
     header['X-Auth-Nonce'] = nonce
     body = {'likes': likenum}
-    apiName = '/api/v2/liveMaster/photoPost/' + photoId + '/like'         
+    apiName = '/api/v2/liveMaster/photoPost/' + str(photoId) + '/like'         
     res = api.apiFunction(prefix, header, apiName, 'post', body) 
     return res
 
@@ -63,7 +63,7 @@ def addComment(token, nonce, prefix, photoId, comment):
 def delPhoto(token, nonce, prefix, photoId):
     header['X-Auth-Token'] = token
     header['X-Auth-Nonce'] = nonce
-    apiName = '/api/v2/liveMaster/photoPost/' + photoId 
+    apiName = '/api/v2/liveMaster/photoPost/' + str(photoId)
     res = api.apiFunction(prefix, header, apiName, 'delete', None)
     return res
 

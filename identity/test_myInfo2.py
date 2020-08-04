@@ -1,6 +1,8 @@
 #milestone19 V2取得，修改個人資訊 #863
 #milestone21 #1125 第3方登入第1個字母大寫  #1005追加trueLove ID
-#milestone23 #1217 如果有修改myinfo會自動清cache
+#milestone23 #1272 如果有修改myinfo會自動清cache，且nickname不可為空字串 #userinfo cache 時間合併在myinfo中驗證
+#milestone26 #1626 #1627 如果role= user or live_controller其暱稱需超過30天才可更改（首次註冊輸入的暱稱不計）
+#milestone27 #
 import json
 import requests
 import pymysql
@@ -21,6 +23,7 @@ header = {'Content-Type': 'application/json', 'Connection': 'Keep-alive', 'X-Aut
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
+    dbConnect.dbSetting(test_parameter['db'], ["update identity set nickname = '123QQ' where login_Id in ('track0050', 'broadcaster005', 'lv000')"])
     initdata.clearIdentityData(test_parameter['db'])
     initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [test_parameter['user_acc'], test_parameter['user1_acc']], idList)
 
@@ -80,23 +83,25 @@ def getData(testName):
             ('err_token', 'err_nonce', '', '', 4)
         ]
     if testName == 'updateInfo':
-        #token, nonce, keyInfo, valueInfo, isCheckUserInfo, expected
+        #scenario, token, nonce, keyInfo, valueInfo, action, intervalDay, expected
         testData = [
-            ('user_token', 'user_nonce', 'nickname', '', False, 4),
-            ('broadcaster_token', 'broadcaster_nonce', 'nickname', '1234567890123', False, 4),
-            ('broadcaster_token', 'broadcaster_nonce', 'nickname', '123456789012', False, 2),
-            ('user_token', 'user_nonce', 'nickname', '     ', False, 2),
-            ('user_token', 'user_nonce', 'nickname', '🥰5566　-🥰', True, 2),
-            ('user_token', 'user_nonce', 'nickname', '🥰🥰🥰🥰❤️💞💝❤️💞💝', False, 2),
-            ('user_token', 'user_nonce', 'nickname', 'AB歡樂派！', False, 2),
-            ('user_token', 'user_nonce', 'sex', 2, False, 4),
-            ('user_token', 'user_nonce', 'sex', 0, False, 2),
-            ('user_token', 'user_nonce', 'isPublicSexInfo', False, False, 2),
-            ('user_token', 'user_nonce', 'description', '哈， I am richman!！！😂 😂 ', False, 2),
-            ('user_token', 'user_nonce', 'description', '', False, 2),
-            ('user_token', 'user_nonce', 'birthday', int(time.time()), False, 2),
-            ('user_token', 'user_nonce', 'birthday', 0, False, 2)
-        ]
+            ('nickname不允許空值', 'user_token', 'user_nonce', 'nickname', '', None, '0', 4),
+            ('nickname長度限制12，輸入13位應失敗', 'broadcaster_token', 'broadcaster_nonce', 'nickname', '1234567890123', None, '', 4),
+            ('直播主更改自己的nickname應成功', 'broadcaster_token', 'broadcaster_nonce', 'nickname', '🥰🥰🥰 🥰❤️💞💝💝12', None, '', 2),
+            ('直播主30天內更改自己的nickname應成功', 'broadcaster_token', 'broadcaster_nonce', 'nickname', '🥰🥰🥰 哇 ❤️💞💝❤️💞', None, '', 2),
+            ('使用者首次更新自己的nickname會成功，且nickname允許全空白', 'user_token', 'user_nonce', 'nickname', '    ',  None,  '', 2),
+            ('使用者再次更新自己的nickname距上次更新未超過30天應失敗', 'user_token', 'user_nonce', 'nickname', '🥰🥰🥰🥰❤️💞💝❤️💞💝',  'updateDB', (0-30*86400+1), 4),
+            ('使用者更新自己的性別，值正確應成功', 'user_token', 'user_nonce', 'sex', 0,  None,  '', 2),
+            ('使用者更新自己的性別是否公開的設定應成功', 'user_token', 'user_nonce', 'isPublicSexInfo', False, None, '', 2),
+            ('使用者更新自己的個人簡介在100字之內應成功', 'user_token', 'user_nonce', 'description', '哈， I am richman!！！😂 😂 ',  None, '', 2),
+            ('場控首次更新自己的nickname會成功', 'liveController1_token', 'liveController1_nonce', 'nickname', '🥰5566　-🥰',  None, '',  2),
+            ('場控再次更新自己的nickname應成功', 'liveController1_token', 'liveController1_nonce', 'nickname', '🥰🥰🥰🥰❤️💞💝❤️💞💝', None, '', 2),
+            ('場控修改個人簡介應成功', 'liveController1_token', 'liveController1_nonce', 'description', '我是場控',  None,  '', 2),
+            ('使用者清空個人簡介應成功', 'user_token', 'user_nonce', 'description', '',  None,  '', 2),
+            ('使用者設定自己生日為今天應成功', 'user_token', 'user_nonce', 'birthday', int(time.time()),  None,  '', 2),
+            ('使用者更新自己的性別，但值不存在應錯誤', 'user_token', 'user_nonce', 'sex', 2,  None,  '', 4), 
+            ('使用者再次更新自己的nickname距上次更新超過30天應成功', 'user_token', 'user_nonce', 'nickname', 'AB歡樂派！',  'updateDB', (0-30*86400-1), 2)
+        ]  
     elif testName == 'newUser':
         #condition, expected
         testData = [
@@ -145,6 +150,7 @@ class TestGetMyInfo():
 ・舊有帳號可以修改資料，若是空白則修改成空白
 '''
 class TestUpdateMyinfo():
+    body = {'nickname': '123QQ', 'sex': 1, 'isPublicSexInfo': True, 'description': 'haha', 'birthday': int(time.time() - 5000)}
     @pytest.mark.parametrize("condition, expected", getData('newUser'))
     def testNewAccount(self, condition, expected):
         url = '/api/v2/identity/myInfo'
@@ -162,41 +168,36 @@ class TestUpdateMyinfo():
         res = api.apiFunction(test_parameter['prefix'], header, url, 'get', None)
         restext = json.loads(res.text)
         if condition == 'regByMail':
+            assert restext['data']['nickname'][0:4] == '初樂用戶'
             assert restext['data']['isPasswordSet'] == True
             assert restext['data']['verifiedEmail'] == 'tl-lisa@truelovelive.dev'
             assert len(restext['data']['trueLoveId']) > 0
         elif condition == 'loginByLine':
+            assert restext['data']['nickname'][0:4] == '初樂用戶'
             assert restext['data']['3rdPartySource'] == 'Line'
             assert restext['data']['isPasswordSet'] == False
             assert len(restext['data']['trueLoveId']) > 0
             #print(restext['3rdPartyInfo'])
 
-    #@pytest.mark.skip()
-    @pytest.mark.parametrize("token, nonce, keyInfo, valueInfo, isCheckUserInfo, expected", getData('updateInfo'))
-    def testUpdateInfo(self, token, nonce, keyInfo, valueInfo, isCheckUserInfo, expected):
-        body = {'nickname': '123', 'sex': 1, 'isPublicSexInfo': True, 'description': 'haha', 'birthday': int(time.time() - 5000)}
+    @pytest.mark.parametrize("scenario, token, nonce, keyInfo, valueInfo, action, intervalSec, expected", getData('updateInfo'))
+    def testUpdateInfo(self, scenario, token, nonce, keyInfo, valueInfo, action, intervalSec, expected):
+        oriData = self.body[keyInfo]
+        actionDic ={
+            'updateDB':{'funcName': dbConnect.dbSetting,  'parameter': [test_parameter['db'], ["update nickname_reset set reset_time = date_add(reset_time, interval " + str(intervalSec) + " SECOND)"]]}
+        }
+        actionDic[action]['funcName'](*actionDic[action]['parameter']) if actionDic.get(action) else None
         url = '/api/v2/identity/myInfo'
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]
-        if isCheckUserInfo:
-            apiName = '/api/v2/identity/userInfo/'
-            res = api.apiFunction(test_parameter['prefix'], header, apiName + idList[0], 'get', None)
-            info1 = json.loads(res.text) 
-        body[keyInfo] = valueInfo
-        res = api.apiFunction(test_parameter['prefix'], header, url, 'put', body)
+        self.body[keyInfo] = valueInfo
+        res = api.apiFunction(test_parameter['prefix'], header, url, 'put', self.body)
         assert res.status_code // 100 == expected
         if expected == 2:
-            res = api.apiFunction(test_parameter['prefix'], header, url, 'get', body)
+            res = api.apiFunction(test_parameter['prefix'], header, url, 'get', None)
             restext = json.loads(res.text)
             assert restext['data'][keyInfo] == valueInfo
             assert len(restext['data']['trueLoveId']) > 0
-            assert restext['data']['nickname'] is not None
-        if isCheckUserInfo:
-            time.sleep(10)
-            res = api.apiFunction(test_parameter['prefix'], header, apiName + idList[0], 'get', None)
-            info2 = json.loads(res.text)
-            assert info2['data']['nickname'] == info1['data']['nickname']
-            time.sleep(20)
-            res = api.apiFunction(test_parameter['prefix'], header, apiName + idList[0], 'get', None)
-            info2 = json.loads(res.text)
-            assert info2['data']['nickname'] == body[keyInfo]
+            assert restext['data']['nickname'] == self.body['nickname']
+            assert restext['data']['nicknameUpdateMsg'] == '每 30 天可修改 1 次 ，上次修改時間: yyyy/MM/dd'
+        else:
+            self.body[keyInfo] = oriData

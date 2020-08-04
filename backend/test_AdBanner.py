@@ -33,7 +33,7 @@ def setup_module():
 def getTestData(testName): 
     testData = []
     body =  {
-        "linkUrl": "https://truelovelive.com.tw", "bannerUrl": "http//hot1.123", "bannerZone": "hot",
+        "linkUrl": "https://truelovelive.com.tw", "bannerUrl": "http//hot1.123", "bannerZone": "HOT",
         "bannerType": 0, "startTime": int(time.time()), "endTime":int(time.time()) + 3600
     }
     if testName == 'add': 
@@ -50,11 +50,11 @@ def getTestData(testName):
             ('權限正確無條件應該列出所有資料', 'backend_token', 'backend_nonce', True, '', '', '', 10, 5, 200),
             ('權限正確條件為item=1&page=1', 'backend_token', 'backend_nonce', False, '?item=1&page=1', 'id', 5, 1, 5, 200),
             ('權限正確條件為item=1&page=2', 'backend_token', 'backend_nonce', False, '?item=1&page=2', 'id', 4, 1, 5, 200),
-            ('權限正確條件為zone=hot&item=10&page=1', 'backend_token', 'backend_nonce', False, '?zone=hot&item=10&page=1', 'bannerZone', 'hot', 10, 2, 200),
+            ('權限正確條件為zone=hot&item=10&page=1', 'backend_token', 'backend_nonce', False, '?zone=HOT&item=10&page=1', 'bannerZone', 'HOT', 10, 2, 200),
             ('權限正確條件為type=0&item=10&page=1', 'backend_token', 'backend_nonce', False, '?type=0&item=10&page=1', 'bannerType', 0, 10, 4, 200),
-            ('權限正確條件為zone=hot&type=2&item=10&page=1', 'backend_token', 'backend_nonce', False, '?zone=hot&type=2&item=10&page=1', 'bannerType', 2, 10, 1, 200),
-            ('權限正確條件為zone=new&type=2&item=10&page=1', 'backend_token', 'backend_nonce', False, '?zone=new&type=2&item=10&page=1', '', '', 10, 0, 200),
-            ('權限正確條件為參數錯誤', 'backend_token', 'backend_nonce', False, '?bannerzone=new&type=2&item=10&page=1', '', '', 10, 0, 400),
+            ('權限正確條件為zone=hot&type=2&item=10&page=1', 'backend_token', 'backend_nonce', False, '?zone=HOT&type=2&item=10&page=1', 'bannerType', 2, 10, 1, 200),
+            ('權限正確條件為zone=new&type=2&item=10&page=1', 'backend_token', 'backend_nonce', False, '?zone=NEW&type=2&item=10&page=1', '', '', 10, 0, 200),
+            ('權限正確條件為參數錯誤', 'backend_token', 'backend_nonce', False, '?bannerzone=NEW&type=2&item=10&page=1', '', '', 10, 0, 400),
             ('權限正確條件為參數未給值', 'backend_token', 'backend_nonce', False, '?zone=&type=2&item=10&page=1', '', '', 10, 0, 400),
             ('權限不正確應該回失敗', 'liveController1_token', 'liveController1_nonce', False, '', '', '', 10, 5, 403),
             ('權限不存在應該回失敗', 'err_token', 'err_nonce', False, '', '', '', 10, 5, 401)
@@ -65,7 +65,7 @@ def getTestData(testName):
             ('新增資料且權限正確針對linkUrl進行修改，結果應成功', 'backend_token', 'backend_nonce', True, 1, 'linkUrl', 'https://yahoo.com.tw', 200),
             ('權限正確針對bannerUrl進行修改，結果應成功', 'backend_token', 'backend_nonce', False, 1, 'bannerUrl', 'https://bannerUrl.com.tw', 200),
             ('權限正確針對bannerType進行修改，結果應成功', 'backend_token', 'backend_nonce', False, 1, 'bannerType', 2, 200),
-            ('權限正確針對bannerZone進行修改，結果應成功', 'backend_token', 'backend_nonce', False, 1, 'bannerZone', 'new', 200),
+            ('權限正確針對bannerZone進行修改，結果應成功', 'backend_token', 'backend_nonce', False, 1, 'bannerZone', 'NEW', 200),
             ('權限正確針對startTime進行修改，結果應成功', 'backend_token', 'backend_nonce', False, 1, 'startTime', int(time.time()) + 300, 200),
             ('權限正確針對endTime進行修改，結果應成功', 'backend_token', 'backend_nonce', False, 1, 'endTime', int(time.time()) + 7200, 200),
             ('權限正確但ID不存在，結果應失敗', 'backend_token', 'backend_nonce', False, 9, 'endTime', int(time.time()) + 7200, 400),
@@ -100,11 +100,11 @@ class TestAdBanner():
         initdata.clearAD(test_parameter['db'])
         #bannerZone, bannerType, bannerUrl, linkUrl
         bodyList = [
-            ['hot', 0, 'http://hot0.jpg','http://yahoo.com.tw'],
-            ['hot', 2, 'http://hot2.jpg','http://yahoo.com.tw'],
-            ['new', 0, 'http://new0.jpg','http://yahoo.com.tw'],
-            ['tracking', 0, 'http://tracking0.jpg','http://yahoo.com.tw'],
-            ['event', 0, 'http://event0.jpg','http://yahoo.com.tw']
+            ['HOT', 0, 'http://hot0.jpg','http://yahoo.com.tw'],
+            ['HOT', 2, 'http://hot2.jpg','http://yahoo.com.tw'],
+            ['NEW', 0, 'http://new0.jpg','http://yahoo.com.tw'],
+            ['TRACKING', 0, 'http://tracking0.jpg','http://yahoo.com.tw'],
+            ['EVENT', 0, 'http://event0.jpg','http://yahoo.com.tw']
         ]
         header['X-Auth-Token'] = test_parameter['backend_token']
         header['X-Auth-Nonce'] = test_parameter['backend_nonce']

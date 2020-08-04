@@ -14,9 +14,9 @@ from datetime import datetime, timedelta
 Msg = {
     200:{'Status': 'Ok', 'Message': 'SUCCESS'},
     401:{'Status': 'Error', 'Message': '使用者驗證錯誤，請重新登入'},
-    403:{'Status': 'Error', 'Message': ['PERMISSION_REQUIRED', '抱歉，您的使用權限不足！如有疑問，請洽初樂客服人員。']},
-    400:{'Status': 'Error', 'Message': ['PARAM_TYPE_ERROR', 'OWNER_IS_NOT_LIVEMASTER', 'LACK_OF_NECESSARY_PARAMS']},
-    404:{'Status': 'Error', 'Message': ['GIFT_CATAGORY_NOT_FOUND', 'MEDIA_NOT_FOUND', 'LIVEMASTER_NOT_FOUND']}
+    403:{'Status': 'Error', 'Message': ['PERMISSION_REQUIRED', '抱歉，您的使用權限不足！如有疑問，請洽初樂客服人員。', '該貼文無法檢視']},
+    400:{'Status': 'Error', 'Message': ['PARAM_TYPE_ERROR', 'OWNER_IS_NOT_LIVEMASTER', 'LACK_OF_NECESSARY_PARAMS','USER_HAS_BEEN_BLOCKED']},
+    404:{'Status': 'Error', 'Message': ['GIFT_CATAGORY_NOT_FOUND', 'MEDIA_NOT_FOUND', 'LIVEMASTER_NOT_FOUND', '不存在的動態貼文']}
 }
 env = 'QA'
 test_parameter = {}
@@ -34,6 +34,7 @@ urlList = [
 def setup_module():
     initdata.set_test_data(env, test_parameter)    
     initdata.clearFansInfo(test_parameter['db'])
+    initdata.clearPhoto(test_parameter['db'])
     initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'] , 
     [test_parameter['broadcaster_acc'], test_parameter['broadcaster1_acc'], test_parameter['user_acc'], test_parameter['user1_acc']], idlist)
     sqlList = ["update gift_v2 set deleted_at = NULL, is_active = 1 where uuid = '234df236-8826-4938-8340-32f39df43ed1'"]
@@ -70,21 +71,22 @@ def getTestData(testName):
             ('取得該直播主動態列表_有資料', 'backend_token', 'backend_nonce', 0, 10, 1, 3, '', 200),
             ('取得該直播主動態列表_無資料', 'broadcaster_token', 'broadcaster_nonce', 1, 10, 1, 0, '', 200),
             ('取得該直播主動態列表_指定item＝1;page=1', 'user_token', 'user_nonce', 0, 1, 1, 3, '', 200),
+            ('user被列入黑名單，無法取得該直播主的動態列表', 'user1_token', 'user1_nonce', 0, 10, 1, 0, 'block', 400),
             ('原直播主轉成一般user，其動態無法再取得', 'user_token', 'user_nonce', 0, 10, 1, 0, 'changeRole', 400),
-            ('auth 不存在', 'err_token', 'err_nonce', 0, 10, 1, 3, '', 401)
+            ('auth 不存在', 'err_token', 'err_nonce', 0, 10, 1, 3, '', 401) 
         ]
     elif testName == 'singlePhoto':
              #scenario, token, nonce, postId, action, isLike, likeNum, totalLike, comment, totalComment, expected (photo like合併驗證)
         testData = [
-            ('指定動態id', 'backend_token', 'backend_nonce', 1, '', False, 0, 0, '', 0, 200),
-            ('指定動態id不存在', 'backend_token', 'backend_nonce', 0, '', False, 0, 0, '', 0, 200),
-            ('對指定的動態id按喜歡', 'user_token', 'user_nonce', 1, 'like', True, 10, 10, '', 0, 200),
-            ('指定有被按喜歡動態id', 'user1_token', 'user1_nonce', 1, '', False, 0, 10, '', 0, 200),
-            ('指定有被加過評論的動態id', 'user1_token', 'user1_nonce', 1, 'comment', False, 0, 10, 'like 直播主😎🥳㊙️^-^！① ', 1, 200),
-            ('指定已被刪除的動態id', 'user1_token', 'user1_nonce', 2, 'delete', False, 0, 10, '', 0, 400),
-            ('原直播主轉成一般user，其動態無法再取得', 'user_token', 'user_nonce',  1, 'changeRole', False, 0, 10, '', 0, 400),
-            ('user被列入黑名單，無法取得該直播主的動態', 'user1_token', 'user1_nonce', 1, 'block', False, 0, 10, '', 0, 400),
-            ('auth 不存在', 'err_token', 'err_nonce', 1, '', False, 0, 10, '', 0, 401)
+            ('指定動態id', 'backend_token', 'backend_nonce', 1, '', False, 0, 0, '', 0, 2),
+            ('指定動態id不存在', 'backend_token', 'backend_nonce', 0, '', False, 0, 0, '', 0, 4),
+            ('對指定的動態id按喜歡', 'user_token', 'user_nonce', 1, 'like', True, 10, 10, '', 0, 2),
+            ('指定有被按喜歡動態id', 'user1_token', 'user1_nonce', 1, '', False, 0, 10, '', 0, 2),
+            ('指定有被加過評論的動態id', 'user1_token', 'user1_nonce', 1, 'comment', False, 0, 10, 'like 直播主😎🥳㊙️^-^！① ', 1, 2),
+            ('指定已被刪除的動態id', 'user1_token', 'user1_nonce', 2, 'delete', False, 0, 10, '', 0, 4),
+            ('原直播主轉成一般user，其動態無法再取得', 'user_token', 'user_nonce',  1, 'changeRole', False, 0, 10, '', 0, 4),
+            ('user被列入黑名單，無法取得該直播主的動態', 'user1_token', 'user1_nonce', 1, 'block', False, 0, 10, '', 0, 4),
+            ('auth 不存在', 'err_token', 'err_nonce', 1, '', False, 0, 10, '', 0, 4)
         ]
     elif testName == 'updatePhoto':
             #scenario, token, nonce, body, origenal, action, expected
@@ -149,16 +151,15 @@ class TestPhotoOfMaster():
 
 class TestPhotoOperate():
     createPhotoList = [
-        ['photo', urlList[0], '動態照片上傳', '', '', '108'],
-        ['video', '', '動態影片上傳', urlList[1], urlList[2], '108'],
-        ['photo', urlList[0], '動態照片上傳', '', '', '']
+        ['photo', urlList[0], '動態照片上傳1', '', '', '108'],
+        ['video', '', '動態影片上傳1', urlList[1], urlList[2], '108'],
+        ['', urlList[0], '動態照片上傳2', '', '', '']
     ]
    
     #此功能是任何人皆可呼叫，以livemasterid做條件，或指定postid
     def setup_class(self):
         initdata.clearPhoto(test_parameter['db'])
         for i in self.createPhotoList:
-            #body = photo.createBody(self.createPhotoList[i][0], self.createPhotoList[i][1], self.createPhotoList[i][2], self.createPhotoList[i][3], self.createPhotoList[i][4], self.createPhotoList[i][5])
             body = photo.createBody(*i)
             photo.createPhoto(test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], test_parameter['prefix'], body)
 
@@ -212,15 +213,14 @@ class TestPhotoOperate():
             'delete':{'funName': photo.delPhoto, 'parameter': [test_parameter['broadcaster_token'], test_parameter['broadcaster_nonce'], test_parameter['prefix'], postId]},
             'comment':{'funName': photo.addComment, 'parameter': [test_parameter[token], test_parameter[nonce], test_parameter['prefix'], postId, comment]}
         }
-        if action != '':
-            actionDic[action]['funName'](*actionDic[action]['parameter'])
+        actionDic[action]['funName'](*actionDic[action]['parameter']) if actionDic.get(action) else None
         time.sleep(30)
         res = photo.SpecificalPhoto(test_parameter[token], test_parameter[nonce], test_parameter['prefix'], postId)        
         restext = json.loads(res.text)
-        assert res.status_code == expected
-        assert restext['Status'] == Msg[expected]['Status']
-        assert restext['Message'] in Msg[expected]['Message']
-        if expected == 200:
+        assert res.status_code // 100  == expected
+        assert restext['Status'] == Msg[res.status_code]['Status']
+        assert restext['Message'] in Msg[res.status_code]['Message']
+        if expected == 2:
             assert restext['data']['content'] == self.createPhotoList[postId - 1][2]
             assert restext['data']['comments'] == totalComment
             assert restext['data']['owner']['id'] == idlist[0]

@@ -14,6 +14,7 @@ def user_login(prefix, account, pwd):
     }
     #print(body)
     res = requests.post(url, json=body)
+    #print(json.loads(res.text))
     if res.status_code // 100 == 2:
         restext = json.loads(res.text)
         return(restext)
@@ -344,25 +345,22 @@ def blockUser(prefix, token, nonce, userId):
     return(res)
 
 def apiFunction(prefix, head, apiName, way, body):
+    resquestDic = {
+        'post':requests.post,
+        'put':requests.put,
+        'patch':requests.patch, 
+        'get':requests.get, 
+        'delete':requests.delete}
     url = prefix + apiName  
-    #print(head)
-    print('url = %s, method= %s'% (url, way))   
-    if way in ('get', 'delete'):
-        if 'Content-Type' in head.keys():
+    print('url = %s, method= %s'% (url, way))  
+    if body:
+        head['Content-Type'] = 'application/json'
+        res1 = resquestDic[way](url, headers=head, json=body)
+    else: 
+        if head.get('Content-Type'):
             del head['Content-Type']
-    else:
-        if 'Content-Type' not in head.keys():
-            head['Content-Type'] = 'application/json'
+        res1 = resquestDic[way](url, headers=head)
+    print(head)
     print(body) if body else None
-    if way == 'post':
-        res1 = requests.post(url, headers=head, json=body)
-    elif way == 'put':
-        res1 = requests.put(url, headers=head, json=body)    
-    elif way == 'get':   
-        res1 = requests.get(url, headers=head) 
-    elif way == 'delete':
-        res1 = requests.delete(url, headers=head)    
-    elif way == 'patch':
-        res1 = requests.patch(url, headers=head, json=body)
     pprint(json.loads(res1.text))
     return res1 

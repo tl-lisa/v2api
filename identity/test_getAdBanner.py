@@ -34,11 +34,13 @@ def setup_module():
 #scenario, token, nonce, isCreate, condition, key, value, items, totalCount, expected
 testData = [
     ('權限正確無條件應該列出所有資料', 'user_token', 'user_nonce', True, '', '', '', 10, 5, 200),
-    ('權限正確條件為zone=hot', 'backend_token', 'backend_nonce', False, '?zoneType=hot', 'bannerZone', 'hot', 10, 2, 200),
+    ('權限正確條件為zone=hot', 'backend_token', 'backend_nonce', False, '?zoneType=HOT', 'bannerZone', 'HOT', 10, 2, 200),
+    ('權限正確條件為zone=NEW', 'backend_token', 'backend_nonce', False, '?zoneType=NEW', 'bannerZone', 'NEW', 10, 1, 200),
     ('權限正確條件為type=0', 'backend_token', 'backend_nonce', False, '?bannerType=0', 'bannerType', 0, 10, 4, 200),
-    ('權限正確條件為zone=hot&type=2', 'broadcaster_token', 'broadcaster_nonce', False, '?zoneType=hot&bannerType=2', 'bannerType', 2, 10, 1, 200),
-    ('權限正確條件為zone=new&type=2', 'broadcaster_token', 'broadcaster_nonce', False, '?zoneType=new&bannerType=2', '', '', 10, 0, 200),
-    ('權限正確條件為參數錯誤', 'backend_token', 'backend_nonce', False, '?bannerzone=new&bannerType=2', '', '', 10, 0, 400),
+    ('權限正確條件為zone=hot&type=2', 'broadcaster_token', 'broadcaster_nonce', False, '?zoneType=HOT&bannerType=2', 'bannerType', 2, 10, 1, 200),
+    ('權限正確條件為zone=new&type=0', 'broadcaster_token', 'broadcaster_nonce', False, '?zoneType=NEW&bannerType=0', '', '', 10, 1, 200),
+    ('權限正確條件但找不到資料為zone=event&type=1', 'broadcaster_token', 'broadcaster_nonce', False, '?zoneTyp=EVENT&bannerType=1', '', '', 10, 0, 400),
+    ('權限正確條件為參數錯誤', 'backend_token', 'backend_nonce', False, '?bannerzone=NEW&bannerType=2', '', '', 10, 0, 400),
     ('權限正確條件為參數未給值', 'backend_token', 'backend_nonce', False, '?zoneType=&bannerType=2', '', '', 10, 0, 400),
     ('權限不存在應該回失敗', 'err_token', 'err_nonce', False, '', '', '', 10, 5, 401)
 ]
@@ -60,11 +62,11 @@ class TestAdBanner():
         initdata.clearAD(test_parameter['db'])
         #bannerZone, bannerType, bannerUrl, linkUrl
         bodyList = [
-            ['hot', 0, 'http://hot0.jpg','http://yahoo.com.tw'],
-            ['hot', 2, 'http://hot2.jpg','http://yahoo.com.tw'],
-            ['new', 0, 'http://new0.jpg','http://yahoo.com.tw'],
-            ['tracking', 0, 'http://tracking0.jpg','http://yahoo.com.tw'],
-            ['event', 0, 'http://event0.jpg','http://yahoo.com.tw']
+            ['HOT', 0, 'http://hot0.jpg','http://yahoo.com.tw'],
+            ['HOT', 2, 'http://hot2.jpg','http://yahoo.com.tw'],
+            ['NEW', 0, 'http://new0.jpg','http://yahoo.com.tw'],
+            ['TRACKING', 0, 'http://tracking0.jpg','http://yahoo.com.tw'],
+            ['EVENT', 0, 'http://event0.jpg','http://yahoo.com.tw']
         ]
         header['X-Auth-Token'] = test_parameter['backend_token']
         header['X-Auth-Nonce'] = test_parameter['backend_nonce']
@@ -81,10 +83,11 @@ class TestAdBanner():
 
     @pytest.mark.parametrize("scenario, token, nonce, isCreate, condition, key, value, items, totalCount, expected", testData)
     def testGetBanner(self, scenario, token, nonce, isCreate, condition, key, value, items, totalCount, expected):
+        time.sleep(30) if token == 'err_token' else None
         self.creatAdBanner(5) if isCreate else None
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]
-        apiName = '/api/v2/adBanner/list' + condition
+        apiName = '/api/v2/identity/adBanner/list' + condition
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         restext = json.loads(res.text)
         assert res.status_code == expected

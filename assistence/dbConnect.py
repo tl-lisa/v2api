@@ -46,7 +46,6 @@ def dbQuery(hostAddr, sqlStr):
 
 def dbSetting(hostAddr, sqlStr):
     #print('server adder=%s'%hostAddr)
-    #pprint(sqlStr)
     ssh_host = hostAddr #'35.201.246.119'            #SSH服务器地址
     ssh_port = 22                  #SSH端口
     keyfile = '../assistence/lisakey'            #SSH密钥

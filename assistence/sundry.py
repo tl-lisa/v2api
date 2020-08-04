@@ -136,6 +136,8 @@ def clearCache(hostAddr):
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(hostAddr, username='lisa', key_filename=keyfile)
     cmd = 'redis-cli flushdb;'
+    ssh.exec_command(cmd)
+    ssh.close()
 
 def execut_calculate_statistics(hostAddr):
     keyfile = '../assistence/lisakey'  
@@ -148,15 +150,6 @@ def execut_calculate_statistics(hostAddr):
     #print ('command = %s' %cmd)
     #stdin, stdout, stderr = ssh.exec_command(cmd)
     ssh.exec_command(cmd)
-    '''
-    while not stdout.channel.exit_status_ready(): 
-        if stdout.channel.recv_ready():
-            rl, wl, xl = select.select([stdout.channel], [ ], [ ], 0.0)
-            if len(rl) > 0:
-                tmp = stdout.channel.recv(1024)
-                output = tmp.decode()
-                print (output)
-    '''
     ssh.close()
 
 def createAccount(env, accountPrefix, countNum):
