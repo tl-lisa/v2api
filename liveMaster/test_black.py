@@ -12,12 +12,11 @@ header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)    
-    header['X-Auth-Token'] = test_parameter['backend_token']
-    header['X-Auth-Nonce'] = test_parameter['backend_nonce']         
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['broadcaster1_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user_acc'], header))
-    idlist.append(api.search_user(test_parameter['prefix'], test_parameter['user1_acc'], header))
+    initdata.set_test_data(env, test_parameter)
+    initdata.clearFansInfo(test_parameter['db'])
+    initdata.clearPhoto(test_parameter['db'])
+    initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'] , 
+    [test_parameter['broadcaster_acc'], test_parameter['broadcaster1_acc'], test_parameter['user_acc'], test_parameter['user1_acc']], idList)
 
 def teardown_module():
     pass

@@ -10,13 +10,12 @@ def set_test_data(env, test_parameter):
     if env == 'QA':
         test_parameter['prefix'] = 'http://35.234.17.150'
         test_parameter['db'] = '35.234.17.150'       
-        # test_parameter['prefix'] = 'http://35.194.187.187'
-        # test_parameter['db'] = '35.194.187.187'
     elif env == 'test':
         test_parameter['prefix'] = 'http://testing-api.truelovelive.com.tw'
         test_parameter['db'] = 'testing-api.truelovelive.com.tw'
     test_parameter['user_acc'] = 'track0050'
     test_parameter['user1_acc'] = 'track0040'
+    test_parameter['user2_acc'] = 'track0060'
     test_parameter['backend_acc'] = 'tl-lisa'
     test_parameter['broadcaster_acc'] = 'broadcaster005'        #新秀 每日最多時數3小時
     test_parameter['broadcaster1_acc'] = 'broadcaster006'       #女神 每日最多時數3小時
@@ -46,6 +45,9 @@ def set_test_data(env, test_parameter):
     result = api.user_login(test_parameter['prefix'], test_parameter['user1_acc'], test_parameter['user_pass'])
     test_parameter['user1_token'] = result['data']['token']
     test_parameter['user1_nonce'] = result['data']['nonce']
+    result = api.user_login(test_parameter['prefix'], test_parameter['user2_acc'], test_parameter['user_pass'])
+    test_parameter['user2_token'] = result['data']['token']
+    test_parameter['user2_nonce'] = result['data']['nonce']
     result = api.user_login(test_parameter['prefix'], test_parameter['backend_acc'], test_parameter['backend_pass'])
     test_parameter['backend_token'] = result['data']['token']
     test_parameter['backend_nonce'] = result['data']['nonce']
@@ -108,6 +110,18 @@ def clearAD(db):
     for i in tableList:
         sqlStr = "TRUNCATE TABLE " + i
         sqlList.append(sqlStr)   
+    dbConnect.dbSetting(db, sqlList)
+
+def clearAnnouncement(db):
+    sqlList = []
+    tableList = ['announcement_v2_identity_association', 'announcement_v2_user_level', 'announcement_v2_last_login_period', 'announcement_v2_register_time_period']
+    for i in tableList:
+        sqlStr = "TRUNCATE TABLE " + i
+        sqlList.append(sqlStr)   
+    deleteList = ['announcement_v2'] 
+    for tableName in deleteList:
+        sqlList.append("delete from " + tableName)
+        sqlList.append("alter table " + tableName + " auto_increment = 1")
     dbConnect.dbSetting(db, sqlList)
 
 def initIdList(prefix, token, nonce, accountList, idList):
@@ -189,12 +203,20 @@ def clearIdentityData(dbInfo):
 
 def clearFansInfo(db):
     sqlList = []       
-    truncateList = ['user_follows', 'fans', 'user_blocks', 'fans_history', 'photo_report', 'photo_comment', 'photo_like', 'notification_v2_identity_association', 'zego_master']
+    truncateList = ['user_follows', 'fans', 'user_blocks', 'fans_history', 'photo_report', 'post_gift_history','photo_comment', 'photo_like', 'notification_v2_identity_association', 'zego_master']
     for i in truncateList:
         sqlList.append("TRUNCATE TABLE " + i)
     sqlList.append('delete from notification_v2')
     sqlList.append('delete from photo_post')
     dbConnect.dbSetting(db, sqlList)    
+
+def clearProfile(db):
+    sqlList = []
+    sqlList.append('TRUNCATE TABLE live_master_name_card')
+    sqlList.append('TRUNCATE TABLE profile_like')
+    sqlList.append('Delete from live_master_profile')
+    sqlList.append("alter table live_master_profile auto_increment = 1")
+    dbConnect.dbSetting(db, sqlList)
 
 def clearIMInfo(db):
     sqlList = []

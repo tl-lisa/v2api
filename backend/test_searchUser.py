@@ -1,3 +1,4 @@
+#milestone28重測，因為效能調校，另外新加case #1326
 import json
 import requests
 import time
@@ -21,6 +22,8 @@ testData = [
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1234', 'all', [1], 'ROLE_USER', 2),
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1234', 'all', [0], 'ROLE_USER', 2),
     ('auth=admin;type is empty', 'backend_token', 'backend_nonce', '1234', '', [0], 'ROLE_USER', 2),
+    ('auth=admin;type is empty', 'backend_token', 'backend_nonce', '', '', [0], 'ROLE_USER', 2),
+    ('auth=admin;type is empty', 'backend_token', 'backend_nonce', '', '', [1], '', 2),
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1234', 'nick_name', [1,0,-1,-2], 'ROLE_USER', 2),
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1', 'login_id', [1,0,-1,-2], 'ROLE_ADMIN', 2),
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1', 'login_id', [1,0,-1,-2], 'ROLE_MASTER', 2),
@@ -32,10 +35,8 @@ testData = [
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1234', 'login_id', [1,0,-1,-2], 'ROLE_USER', 2),
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1234', 'uuid', [1,0,-1,-2], 'ROLE_USER', 2),
     ('auth=admin;input all condition', 'backend_token', 'backend_nonce', '1234', 'phone_number', [1,0,-1,-2], 'ROLE_USER', 2),
-    ('auth=admin;without keyword', 'backend_token', 'backend_nonce', '', 'all', [1], 'ROLE_USER', 4),
     ('wrond auth', 'user_token', 'user_nonce', '1234', 'all', [1], 'ROLE_USER', 4)
 ]
-
 
 @pytest.mark.parametrize('scenario, token, nonce, keyword, typeKind, statusFilter, roleFilter, expected', testData)
 def testSerchUser(scenario, token, nonce, keyword, typeKind, statusFilter, roleFilter, expected):

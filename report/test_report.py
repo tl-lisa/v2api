@@ -28,8 +28,6 @@ def testInitial():
     global result
     result = setTestData.getData(userList, masterList, db)
     pprint(result)
-    sundry.execut_calculate_statistics(db)
-    time.sleep(30)
 
 def setup_module():
     initdata.set_test_data(env, test_parameter) 
@@ -71,6 +69,14 @@ def getTestData(funName):
             ('用戶查詢本日收禮明細指定每頁顯示筆數', 'user1_token', 'user1_nonce', userList[0], [0, 1], '?item=1&page=1', 1, 2),
             ('用戶只能查詢自己的明細', 'broadcaster_token', 'broadcaster_nonce', userList[1], [1, 2], '?item=10&page=1', 10, 4) 
         ]
+    elif funName == 'backendConsumed':
+        testData = [  
+            ('查詢用戶昨日收禮明細', 'backend_token', 'backend_nonce', userList[1], [1, 2], '?item=10&page=1', 10, 2),
+            ('查詢用戶本月收禮明細', 'backend_token', 'backend_nonce', userList[1], [0, 2], '?item=10&page=1', 10, 2),
+            ('查詢用戶本日收禮明細', 'backend_token', 'backend_nonce', userList[0], [0, 1], '?item=10&page=1', 10, 2),
+            ('查詢用戶本日收禮明細指定每頁顯示筆數', 'backend_token', 'backend_nonce', userList[0], [0, 1], '?item=1&page=1', 1, 2),
+            ('只能admin查詢', 'user_token', 'user_nonce', userList[1], [1, 2], '?item=10&page=1', 10, 4) 
+        ]
     elif funName == 'backendRevenue':
         testData = [  
             ('以id查詢昨日收禮明細', 'backend_token', 'backend_nonce', 'liveMasterId', [masterList[0], masterList[1], masterList[2], masterList[3]], [1, 2], '?item=10&page=1', 10, 2),
@@ -81,10 +87,10 @@ def getTestData(funName):
         ]
     elif funName == 'backendHours': 
         testData = [  
-            ('以id查詢昨日開播時間查詢', 'backend_token', 'backend_nonce', 'liveMasterId', [masterList[0], masterList[1], masterList[2], masterList[3]], [1, 2], '?item=10&page=1', 10, 2),
+            ('以id查詢昨日開播時間查詢', 'backend_token', 'backend_nonce', 'userIds', [masterList[0], masterList[1], masterList[2], masterList[3]], [1, 2], '?item=10&page=1', 10, 2),
             ('以agencyid查詢本月開播時數', 'backend_token', 'backend_nonce', 'agencyIds', ['1', '10'], [0, 3], '?item=10&page=1', 10, 2),
-            ('以id本日開播時數指定每頁顯示筆數', 'backend_token', 'backend_nonce', 'liveMasterId', [masterList[0], masterList[1], masterList[2], masterList[3]], [0, 1], '?item=1&page=1', 1, 2),
-            ('只有admin能查詢明細', 'broadcaster_token', 'broadcaster_nonce', 'liveMasterId', [masterList[0], masterList[1]], [1, 2], '?item=10&page=1', 10, 4) 
+            ('以id本日開播時數指定每頁顯示筆數', 'backend_token', 'backend_nonce', 'userIds', [masterList[0], masterList[1], masterList[2], masterList[3]], [0, 1], '?item=1&page=1', 1, 2),
+            ('只有admin能查詢明細', 'broadcaster_token', 'broadcaster_nonce', 'userIds', [masterList[0], masterList[1]], [1, 2], '?item=10&page=1', 10, 4) 
         ]
     elif funName == 'giftGiver':
         #排行榜官網會使用，不做token/nonce判斷
@@ -93,7 +99,7 @@ def getTestData(funName):
             ('以giftid作查詢條件', 'broadcaster_token', 'broadcaster_nonce', 'giftId', '5976e63d-7166-4585-a3a3-fb48efed9a37', [0, 2], 2),
             ('以直播主作查詢條件', 'user_token', 'user_nonce', 'liveMasterId', ['d82a7ba2-5c11-4615-aba7-2a768d927165', '971f5a08-a8df-493a-93ca-8df6022963de'], [0, 2], 2),
             ('僅以時間作為查詢條件', 'backend_token', 'backend_nonce', None, None, [0, 2], 2),
-            ('token/nonce有不存在', 'err_token', 'err_nonce', 'giftCategory', '108', [0, 2], 4)
+            ('token/nonce不存在', 'err_token', 'err_nonce', 'giftCategory', 108, [0, 2], 2)
         ]
     elif funName == 'liveMaster':
         #排行榜官網會使用，不做token/nonce判斷
@@ -105,7 +111,8 @@ def getTestData(funName):
             ('以性別作查詢條件', 'user_token', 'user_nonce', 'gender', 'male', [0, 2], 2),
             ('以性別作查詢條件', 'user_token', 'user_nonce', 'gender', 'all', [0, 2], 2),
             ('以orderBy作查詢條件', 'user_token', 'user_nonce', 'orderBy', 'hot', [0, 2], 2),
-            ('僅以時間作為查詢條件', 'backend_token', 'backend_nonce', None, None, [0, 2], 2)
+            ('以targetMonth作查詢條件', 'user_token', 'user_nonce', 'targetMonth', '', [0, 2], 2),
+            ('僅以時間作為查詢條件', 'err_token', 'err_nonce', 'liveMasterId', 'd82a7ba2-5c11-4615-aba7-2a768d927165', [0, 2], 2)
         ]    
     return testData
  
@@ -123,10 +130,10 @@ class TestMasterReport():
             keyList = result[masterId].keys()
             for i in keyList:
                 if i != 'info':
-                    if i == 0:
+                    if str(i) == '0':
                         compareResult['today']['points'] += result[masterId][i]['points']['points']
                         compareResult['today']['liveTimeSec'] += min(result[masterId][i]['onAir']['active'], result[masterId][i]['onAir']['real'], result[masterId]['info']['max'])
-                    elif i == 1:
+                    elif str(i) == '1':
                         compareResult['yesterday']['points'] += result[masterId][i]['points']['points']
                         compareResult['yesterday']['liveTimeSec'] += min(result[masterId][i]['onAir']['active'], result[masterId][i]['onAir']['real'], result[masterId]['info']['max'])
                     compareResult['thisMonth']['points'] += result[masterId][i]['points']['points']
@@ -143,8 +150,8 @@ class TestMasterReport():
     def testGiftTotal(self, testInitial, scenario, token, nonce, masterId, periods, condition, items, expected):
         compareResult = {}
         for i in range(periods[0], periods[1]):
-            if result[masterId].get(i):
-                for j in result[masterId][i]['summary']:
+            if result[masterId].get(str(i)):
+                for j in result[masterId][str(i)]['summary']:
                     sender = j.keys()
                     for k in sender:
                         if compareResult.get(k):
@@ -172,8 +179,8 @@ class TestMasterReport():
     def testGiftDetail(self, testInitial, scenario, token, nonce, masterId, periods, condition, items, expected):
         compareResult = []
         for i in range(periods[0], periods[1]):
-            if result[masterId].get(i):
-                compareResult.extend(result[masterId][i]['detail'])
+            if result[masterId].get(str(i)):
+                compareResult.extend(result[masterId][str(i)]['detail'])
         apiName = '/api/v2/liveMaster/' + masterId + '/receiveGift/detail' + condition
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]   
@@ -202,8 +209,9 @@ class TestMasterReport():
     def testSendDetail(self, testInitial, scenario, token, nonce, userId, periods, condition, items, expected):
         compareResult = []
         for i in range(periods[0], periods[1]):
-            if result[userId].get(i):
-                compareResult.extend(result[userId][i]['detail'])
+            #pprint(result[userId])
+            if result[userId].get(str(i)):
+                compareResult.extend(result[userId][str(i)]['detail'])
         apiName = '/api/v2/identity/' + userId + '/sendGift/detail' + condition
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]   
@@ -241,17 +249,16 @@ class TestMasterReport():
                     compareData = {}
                     createAt = int((datetime.strptime(((datetime.today() - timedelta(days=j + 1)).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s'))
                     compareData['createAt'] = createAt
-                    compareData['liveTimeSum']       = min(result[i][j]['onAir']['active'], result[i][j]['onAir']['real'], result[i]['info']['max'])
+                    compareData['liveTimeSum']       = min(result[i][str(j)]['onAir']['active'], result[i][str(j)]['onAir']['real'], result[i]['info']['max'])
                     compareData['liveMasterLoginId'] = result[i]['info']['loginId']
-                    compareData['liveroomPoints']    = result[i][j]['points']['liveroomPoints']
-                    compareData['liveshowPoints']    = result[i][j]['points']['liveshowPoints']
-                    compareData['postwallPoints']    = result[i][j]['points']['postwallPoints']
-                    compareData['imPoints']          = result[i][j]['points']['imPoints']
-                    compareData['gamePoints']        = result[i][j]['points']['gamePoints']
-                    compareData['points']            = result[i][j]['points']['points']
+                    compareData['liveroomPoints']    = result[i][str(j)]['points']['liveroomPoints']
+                    compareData['liveshowPoints']    = result[i][str(j)]['points']['liveshowPoints']
+                    compareData['postwallPoints']    = result[i][str(j)]['points']['postwallPoints']
+                    compareData['imPoints']          = result[i][str(j)]['points']['imPoints']
+                    compareData['gamePoints']        = result[i][str(j)]['points']['gamePoints']
+                    compareData['points']            = result[i][str(j)]['points']['points']
                     compareData['nickname']          = result[i]['info']['nickname']
                     compare.append(compareData)
-        pprint(compare)
         return compare
 
     @pytest.mark.parametrize("scenario, token, nonce, keys, values, periods, condition, items, expected", getTestData('backendRevenue'))
@@ -291,16 +298,17 @@ class TestMasterReport():
     def testBackendConsumed(self, testInitial, scenario, token, nonce, userId, periods, condition, items, expected):
         compareResult = []
         for i in range(periods[0], periods[1]):
-            if result[userId].get(i):
-                compareResult.extend(result[userId][i]['detail'])
+            if result[userId].get(str(i)):
+                compareResult.extend(result[userId][str(i)]['detail'])
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]   
         start_at = int((datetime.strptime(((datetime.today() - timedelta(days=periods[1])).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s'))
         end_at = int((datetime.strptime(((datetime.today() - timedelta(days=periods[0])).strftime('%Y-%m-%d 15:59:59')), '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s'))
         condition = condition + '&startTime=' + str(start_at) + '&endTime=' + str(end_at)
-        apiName = '/api/v2/backend/user/usageList/' + condition                                                                                                                                                                                                        
+        apiName = '/api/v2/backend/user/usageList/'+ userId + condition                                                                                                                                                                                                        
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'get', None)
         restext = json.loads(res.text)
+        pprint(compareResult)
         assert res.status_code // 100 == expected
         if expected == 2:
             assert len(restext['data']) <= items
@@ -310,13 +318,16 @@ class TestMasterReport():
                     restext['data'][i]['createAt'] <= restext['data'][i - 1]['createAt']
                 isFound = False
                 for j in compareResult:
-                    isFound = False
-                for j in compareResult:
-                    if j['create_at'] == restext['data'][i]['createAt']:
-                        isFound = True
-                        assert j['point'] == restext['data'][i]['points']
+                    if  all([j['historyId'] == 0, abs(j['create_at'] - restext['data'][i]['createAt']) <= 5]):            
+                        assert j['points'] == restext['data'][i]['point']
+                        assert j['liveMasterId'] == restext['data'][i]['liveMasterId']
                         assert j['name'] == restext['data'][i]['giftName']
-                        assert j['uid'] == restext['data'][i]['liveMasterId']
+                        isFound = True
+                        break
+                    elif all([j['historyId'] != 0, j['historyId'] == restext['data'][i]['historyId'], j['name'] == restext['data'][i]['giftName']]):
+                        assert j['points'] == restext['data'][i]['point']
+                        assert j['liveMasterId'] == restext['data'][i]['liveMasterId']
+                        isFound = True
                         break
                 assert isFound
 
@@ -324,20 +335,23 @@ class TestMasterReport():
         checkList = []
         for i in masterList:
             isAdd = False
-            if keys == 'liveMasterId':
+            if keys == 'userIds':
                 isAdd = True if i in values else False
             else:
                 isAdd = True if result[i]['info']['agencyId'] in values else False
             if isAdd:
+                compare = []
                 for j in range(beg, end):
-                    compare = []
-                    if result[i].get(j):
-                        activeSec = min(result[i][j]['onAir']['active'], result[i][j]['onAir']['real'], result[i]['info']['max'])
-                        compare.insert(0, activeSec)
-                        compare.insert(0, result[i][j]['onAir']['real'])
+                    isAppend = False
+                    if result[i].get(str(j)):
+                        activeSec = min(result[i][str(j)]['onAir']['active'], result[i][str(j)]['onAir']['real'], result[i]['info']['max'])
+                        compare.insert(0, format(round(activeSec/3600, 2), '0.2f'))
+                        compare.insert(0, format(round(result[i][str(j)]['onAir']['real']/3600, 2), '0.2f'))
+                        if all([result[i][str(j)]['onAir']['real'] > 0, isAppend == False]):
+                            isAppend = True
                 compare.insert(0, result[i]['info']['loginId'])
                 compare.insert(0, result[i]['info']['nickname'])
-                checkList.append(compare)
+                checkList.append(compare) if isAppend else None
         return checkList
 
     @pytest.mark.parametrize("scenario, token, nonce, keys, values, periods, condition, items, expected", getTestData('backendHours'))
@@ -348,19 +362,22 @@ class TestMasterReport():
         header['X-Auth-Nonce'] = test_parameter[nonce]   
         start_at = int((datetime.strptime(((datetime.today() - timedelta(days=periods[1])).strftime('%Y-%m-%d 16:00:00')), '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s'))
         end_at = int((datetime.strptime(((datetime.today() - timedelta(days=periods[0])).strftime('%Y-%m-%d 15:59:59')), '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s'))
-        body =  {'startTime': start_at, 'endTime': end_at}
+        body =  {'startDate': start_at, 'endDate': end_at}
         body[keys] = values if keys else None
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
         restext = json.loads(res.text)
         assert res.status_code // 100 == expected
-        for i in range(1, len(restext)):
-            isFound = False
-            for j in range(len(compareResult)):
-                if all([restext[i][0] == compareResult[j][0], restext[i][1] == compareResult[j][1]]):
-                    isFound = True
-                    for k in range(2, len(compareResult[j])):
-                        assert restext[i][k] == compareResult[j][k]
-            assert isFound
+        if expected == 2:
+            assert len(restext) - len(compareResult) == 2, "資料筆數不一致"
+            for i in range(1, len(restext) - 1):
+                isFound = False
+                for j in range(len(compareResult)):
+                    if all([restext[i][0] == compareResult[j][0], restext[i][1] == compareResult[j][1]]):
+                        isFound = True
+                        for k in range(2, len(compareResult[j])):
+                            assert restext[i][k] == str(compareResult[j][k])
+                        break
+                assert isFound, print(i)
 
     def giverCompare(self, beg, end, members, keys, values):
         compareResult = []    
@@ -372,15 +389,15 @@ class TestMasterReport():
             }
             for i in range(beg, end):
                 if keys == None:
-                    if result[k].get(i):
-                        for g in result[k][i]['detail']:
+                    if result[k].get(str(i)):
+                        for g in result[k][str(i)]['detail']:
                             compare['giftCount'] += 1 if g['giftId'] != '' else 0
-                        compare['points'] += result[k][i]['points']
+                        compare['points'] += result[k][str(i)]['points']
                         compare['userId'] = k
                 else:
-                    if result[k].get(i):
-                        for j in result[k][i]['detail']:
-                            print(j)
+                    if result[k].get(str(i)):
+                        for j in result[k][str(i)]['detail']:
+                            #print(j)
                             isAdd = False
                             if type(values) == list:
                                 isAdd = True if all([j[keys] != '', j[keys] in values]) else False
@@ -416,6 +433,7 @@ class TestMasterReport():
                     if j['userId'] == restext['data'][i]['userId']:
                         assert j['points'] == restext['data'][i]['points']
                         assert j['giftCount'] == restext['data'][i]['giftCount']
+                        assert len(restext['data'][i]['profilePicture']) > 0
                         isFound = True
                         break
                 assert isFound
@@ -436,13 +454,13 @@ class TestMasterReport():
                     isAdd = True if all([filterDic.get(keys), filterDic[keys] == values]) else False   
             if isAdd:
                 for i in range(beg, end):                
-                    if result[k].get(i):
-                        for g in result[k][i]['detail']:
+                    if result[k].get(str(i)):
+                        for g in result[k][str(i)]['detail']:
                             compare['giftCount'] += 1 if g['giftId'] != '' else 0
-                        compare['points'] += result[k][i]['points']['points']
+                        compare['points'] += result[k][str(i)]['points']['points']
                         compare['userId'] = k
                         compare['nickname'] = result[k]['info']['nickname']
-                        compare['liveTimeSec'] += result[k][i]['onAir']['real']                 
+                        compare['liveTimeSec'] += result[k][str(i)]['onAir']['hot']
             compareResult.append(compare) if compare['userId'] != '' else None
         pprint(compareResult)
         return compareResult
@@ -456,7 +474,12 @@ class TestMasterReport():
         sTime = (datetime.today() - timedelta(days=periods[1]-1)).strftime('%Y-%m-%d 00:00:00')
         eTime = (datetime.today() - timedelta(days=periods[0])).strftime('%Y-%m-%d 23:59:59')
         body = {'startTime': sTime, 'endTime': eTime}
-        body[keys] = values if keys else None
+        if keys:
+            if values:
+                body[keys] = values
+            else:
+                "2019-11-01 00:00:00"
+                body[keys] = str(datetime.datetime.now().year) + '-' + str(datetime.datetime.now().month) + '-01 00:00:00' 
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
         restext = json.loads(res.text)
         assert res.status_code // 100 == expected
@@ -474,6 +497,8 @@ class TestMasterReport():
                         assert j['points'] == restext['data'][i]['points']
                         assert j['giftCount'] == restext['data'][i]['giftCount']
                         assert j['liveTimeSec'] == restext['data'][i]['liveTimeSec']
+                        assert restext['data'][i]['profilePicture'] not in (None, '')
+                        assert restext['data'][i]['profileThumbPicture'] not in (None, '')
                         isFound = True
                         break
                 assert isFound

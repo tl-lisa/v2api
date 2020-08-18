@@ -11,7 +11,7 @@ def checkExist(checkDic, dayDeff):
     #pprint(resultDic)
     masterBody = {
         'points':{'points':0, 'liveroomPoints':0, 'postwallPoints':0, 'imPoints':0, 'liveshowPoints':0, 'gamePoints':0},
-        'onAir':{'active': 0, 'real':0},
+        'onAir':{'active': 0, 'real':0, 'hot':0},
         'detail':[],
         'summary':[]
     }
@@ -22,56 +22,76 @@ def checkExist(checkDic, dayDeff):
     keys = checkDic.keys()
     for i in keys:
         if resultDic.get(checkDic[i]):
-            if resultDic.get(checkDic[i]).get(dayDeff) == None:  
-                resultDic[checkDic[i]][dayDeff] = masterBody if i == 'masterBody' else userBody
+            if resultDic.get(checkDic[i]).get(str(dayDeff)) == None:  
+                resultDic[checkDic[i]][str(dayDeff)] = masterBody if i == 'masterBody' else userBody
             else:
                 continue
         else:
-            resultDic[checkDic[i]] = {dayDeff: masterBody} if i == 'masterBody' else {dayDeff: userBody}
+            resultDic[checkDic[i]] = {str(dayDeff): masterBody} if i == 'masterBody' else {str(dayDeff): userBody}
 
 def caculateTime(masterId, onAirList, dayDeff):
     checkExist({'masterBody':masterId}, dayDeff)
-    dayStr = (datetime.today() - timedelta(days=1-dayDeff)).strftime('%Y-%m-%d') 
+    dayStr = (datetime.today() - timedelta(days=dayDeff)).strftime('%Y-%m-%d') 
     continueNum = -1
+    lastContinueNum = -1
     for i in range(len(onAirList)):
         begDatetime = dayStr + onAirList[i][0]
         endDatetime = dayStr + onAirList[i][1]
-        resultDic[masterId][dayDeff]['onAir']['real'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
+        #熱力榜時間計算
+        if (int(onAirList[i][0][1]) * 10 + int(onAirList[i][0][2])) < 16:
+            resultDic[masterId][str(dayDeff)]['onAir']['hot'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
+        elif all([(int(onAirList[i][0][1]) * 10 + int(onAirList[i][0][2])) >= 16, dayDeff > 0]):
+            if resultDic[masterId].get(str(dayDeff - 1)):
+                resultDic[masterId][str(dayDeff - 1)]['onAir']['hot'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
+            else:
+                resultDic[masterId][str(dayDeff - 1)] = {
+                    'points':{'points':0, 'liveroomPoints':0, 'postwallPoints':0, 'imPoints':0, 'liveshowPoints':0, 'gamePoints':0},
+                    'onAir':{'active': 0, 'real':0, 'hot':0},
+                    'detail':[],
+                    'summary':[]
+                }
+                resultDic[masterId][str(dayDeff - 1)]['onAir']['hot'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
         if all([(len(onAirList) - i > 1), i > continueNum]):
             for j in range(i + 1, len(onAirList)):
                 begDatetime1 = dayStr + onAirList[j][0]
                 endDatetime1 = dayStr + onAirList[j][1]
                 if int((datetime.strptime(begDatetime1, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) <= 300:
                     endDatetime = endDatetime1
-                    continueNum = j
-                else:
+                    currentContinueNum = j
+                else: 
                     break
         if any([
-                all([resultDic[masterId][dayDeff]['onAir']['active'] > 0, i > continueNum]),
-                all([resultDic[masterId][dayDeff]['onAir']['active'] == 0,
+                all([resultDic[masterId][str(dayDeff)]['onAir']['active'] > 0, i > lastContinueNum]),
+                all([resultDic[masterId][str(dayDeff)]['onAir']['active'] == 0,
                 int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) >= 3600])
             ]):
-            resultDic[masterId][dayDeff]['onAir']['active'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
+            lastContinueNum = currentContinueNum
+            resultDic[masterId][str(dayDeff)]['onAir']['active'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
+            resultDic[masterId][str(dayDeff)]['onAir']['real'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
+        elif resultDic[masterId][str(dayDeff)]['onAir']['active'] == 0:
+            resultDic[masterId][str(dayDeff)]['onAir']['real'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
 
-def updateResult(masterId, userId, dayDeff, giftName, pointKind, point, createAt, category, gId):
+def updateResult(db, masterId, userId, dayDeff, giftName, pointKind, point, createAt, category, gId):
     checkExist({'masterBody': masterId, 'userBody': userId}, dayDeff)
-    mGiftDic = {'name': giftName, 'points': point, 'create_at': int((datetime.strptime(createAt, '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s')), 'uid': userId, 'giftId': gId}
+    if pointKind != 'liveroomPoints':
+        res = dbConnect.dbQuery(db, "select max(id) from point_consumption_history")
+    mGiftDic = {'name': giftName, 'points': point, 'create_at': int((datetime.strptime(createAt, '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s')), 'uid': userId, 'giftId': gId, 'historyId': None}
     uGiftDic = {'name': giftName, 'points': point, 'create_at': int((datetime.strptime(createAt, '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s')), 
-                'liveMasterId': masterId, 'giftCategory': category, 'giftId': gId}
-    resultDic[masterId][dayDeff]['points']['points'] += point
-    resultDic[masterId][dayDeff]['points'][pointKind] += point
-    resultDic[masterId][dayDeff]['detail'].insert(0, mGiftDic)
-    resultDic[userId][dayDeff]['detail'].insert(0, uGiftDic)
-    resultDic[userId][dayDeff]['points'] += point
+                'liveMasterId': masterId, 'giftCategory': category, 'giftId': gId, 'historyId': res[0][0] if pointKind != 'liveroomPoints' else 0}
+    resultDic[masterId][str(dayDeff)]['points']['points'] += point
+    resultDic[masterId][str(dayDeff)]['points'][pointKind] += point
+    resultDic[masterId][str(dayDeff)]['detail'].insert(0, mGiftDic)
+    resultDic[userId][str(dayDeff)]['detail'].insert(0, uGiftDic)
+    resultDic[userId][str(dayDeff)]['points'] += point
     isNotFound = True
-    if len(resultDic[masterId][dayDeff]['summary']) > 0:  
-        for j in resultDic[masterId][dayDeff]['summary']:
+    if len(resultDic[masterId][str(dayDeff)]['summary']) > 0:  
+        for j in resultDic[masterId][str(dayDeff)]['summary']:
             if j.get(userId):
                 j[userId] += point
                 isNotFound = False
                 break
-    if any([len(resultDic[masterId][dayDeff]['summary']) == 0, isNotFound]):
-        resultDic[masterId][dayDeff]['summary'].append({userId: point})
+    if any([len(resultDic[masterId][str(dayDeff)]['summary']) == 0, isNotFound]):
+        resultDic[masterId][str(dayDeff)]['summary'].append({userId: point})
 
 def createLiveRoom(db, masterId, timeList, dayDeff):
     sqlList = []
@@ -181,7 +201,7 @@ def sendLiveShowGift(db, masterId, userId, timeStr, uuid, dayDeff): #liveshow禮
     sqlStr += "live_master_id = '"  + masterId      + "', "
     sqlStr += "create_at = '"       + createAt       + "'"
     dbConnect.dbSetting(db, [sqlStr])
-    updateResult(masterId, userId, dayDeff, giftName, 'liveshowPoints', giftPoint, createAt, str(category), uuid)
+    updateResult(db, masterId, userId, dayDeff, giftName, 'liveshowPoints', giftPoint, createAt, str(category), uuid)
 
 def sendLiveRoomGift(db, masterId, userId, timeStr, uuid, dayDeff): #直播間禮物，彈幕 目前尚未寫入PointConsumptionHistory
     sqlList = []
@@ -195,7 +215,7 @@ def sendLiveRoomGift(db, masterId, userId, timeStr, uuid, dayDeff): #直播間�
     sqlStr += "target_user_id = '"  + masterId      + "', "
     sqlStr += "create_at = '"       + createAt       + "'"
     sqlList.append(sqlStr)
-    updateResult(masterId, userId, dayDeff, giftName, 'liveroomPoints', giftPoint, createAt, str(category), uuid)
+    updateResult(db, masterId, userId, dayDeff, giftName, 'liveroomPoints', giftPoint, createAt, category, uuid)
     barragePoint = '35' if (dayDeff % 2) == 0 else '350'
     createAt = (datetime.strptime(dayStr + timeStr, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=2)).strftime('%Y-%m-%d %H:%M:%S')
     sqlStr  = "insert into live_room_gift set "
@@ -207,7 +227,7 @@ def sendLiveRoomGift(db, masterId, userId, timeStr, uuid, dayDeff): #直播間�
     sqlStr += "create_at = '"       + createAt      + "'"
     sqlList.append(sqlStr)
     dbConnect.dbSetting(db, sqlList)
-    updateResult(masterId, userId, dayDeff, '彈幕消費', 'liveroomPoints', int(barragePoint), createAt, '', '')
+    updateResult(db, masterId, userId, dayDeff, '彈幕消費', 'liveroomPoints', int(barragePoint), createAt, None, '')
 
 def joinGame(db, masterId, userId, timeStr, dayDeff):
     createGameRoom(db)
@@ -218,7 +238,7 @@ def joinGame(db, masterId, userId, timeStr, dayDeff):
     sqlStr += "game_room_id=(select max(id) from game_room), "
     sqlStr += "room_id=(select max(id) from live_room) "
     dbConnect.dbSetting(db, [sqlStr])
-    updateResult(masterId, userId, dayDeff, '遊戲消費', 'gamePoints', 500, createAt, '', '')
+    updateResult(db, masterId, userId, dayDeff, '遊戲消費', 'gamePoints', 500, createAt, None, '')
 
 def IMPoint(db, masterId, userId, dayDeff):
     createIM(db, userId, masterId, dayDeff)
@@ -228,7 +248,7 @@ def IMPoint(db, masterId, userId, dayDeff):
     sqlStr += "id=(select max(id) from point_consumption_history), "
     sqlStr += "message_id=(select max(id) from instant_message) "
     dbConnect.dbSetting(db, [sqlStr])
-    updateResult(masterId, userId, dayDeff, '私訊消費', 'imPoints', 20, createAt, '', '')
+    updateResult(db, masterId, userId, dayDeff, '私訊消費', 'imPoints', 20, createAt, None, '')
 
 def sendPostGift(db, masterId, userId, gid, dayDeff):
     createPhotoPost(db, masterId, dayDeff)
@@ -240,7 +260,7 @@ def sendPostGift(db, masterId, userId, gid, dayDeff):
     sqlStr += "post_id=(select max(id) from photo_post), "
     sqlStr += "gift_id= " + str(gid)
     dbConnect.dbSetting(db, [sqlStr])
-    updateResult(masterId, userId, dayDeff, giftName, 'postwallPoints', giftPoint, createAt, str(category), gid)
+    updateResult(db, masterId, userId, dayDeff, giftName, 'postwallPoints', giftPoint, createAt, category, gid)
 
 def clearData(db):
     sqlList = [] 

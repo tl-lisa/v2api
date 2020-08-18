@@ -229,12 +229,8 @@ def set_namecard_like(prefix, header1, MasterId, num):
 
 
 def namecard_operator(prefix, header1, method, MasterId, link_address):
-    url = prefix + '/api/v2/liveMaster/' + MasterId + '/nameCard'
-    if method == 'get':
-        res = requests.get(url, headers=header1)
-    else:
-        body = {'url': link_address}
-        res = requests.post(url, headers=header1, json=body)
+    body = {'url': link_address} if method != 'get' else None
+    res = apiFunction(prefix, header1, '/api/v2/liveMaster/' + MasterId + '/nameCard', method, body)
     return(res)
 
 
@@ -307,9 +303,12 @@ def add_block_user(prefix, header1, body):
     return(res)
 
 
-def delete_block_user(prefix, header1, uid):
+def delete_block_user(prefix, token, nonce, uid):
+    header = {'Connection': 'Keep-alive', 'X-Auth-Token': '', 'X-Auth-Nonce': ''}
+    header['X-Auth-Token'] = token
+    header['X-Auth-Nonce'] = nonce
     url = prefix + '/api/v2/liveMaster/blockUser/' + uid
-    res = requests.delete(url, headers=header1)
+    res = requests.delete(url, headers=header)
     return(res)
 
 
@@ -352,15 +351,16 @@ def apiFunction(prefix, head, apiName, way, body):
         'get':requests.get, 
         'delete':requests.delete}
     url = prefix + apiName  
-    print('url = %s, method= %s'% (url, way))  
     if body:
         head['Content-Type'] = 'application/json'
         res1 = resquestDic[way](url, headers=head, json=body)
     else: 
         if head.get('Content-Type'):
-            del head['Content-Type']
+            del head['Content-Type']          
         res1 = resquestDic[way](url, headers=head)
     print(head)
-    print(body) if body else None
+    print('url = %s, method= %s'% (url, way))  
+    print(body) if body else print('no body')
+    pprint('status code = %d'%res1.status_code)
     pprint(json.loads(res1.text))
     return res1 

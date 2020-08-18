@@ -1,3 +1,4 @@
+#milestone 28 #1643加入判斷黑名單機制
 import time
 import json
 import datetime
@@ -18,16 +19,8 @@ cover_list = ['https://d3eq1e23ftm9f0.cloudfront.net/namecard/photo/460d7772e0ec
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)    
-
-def teardown_module():
-    header['X-Auth-Token'] = test_parameter['backend_token']
-    header['X-Auth-Nonce'] = test_parameter['backend_nonce']
-    mid = api.search_user(test_parameter['prefix'], test_parameter['broadcaster_acc'], header) 
-    #reset namecard
-    res = api.namecard_operator(test_parameter['prefix'], header, 'get', mid,'')
-    result1 = json.loads(res.text)
-    for i in result1['data']['nameCard']['cards']:
-        api.del_cover(test_parameter['prefix'], header, i['id'])
+    initdata.clearProfile(test_parameter['db'])
+    initdata.clearFansInfo(test_parameter['db'])
 
 class TestnameCard():
     def test_add_cover(self):
@@ -169,7 +162,8 @@ class TestnamecardLike():
     def test_userInBlack(self):
         #使用者在該直播主的黑名單內，即無法取得該名直播主的名片
         api.apiFunction(test_parameter['prefix'], self.broad_header, '/api/v2/liveMaster/blockUser', 'post', {'userId': self.uid})
+        time.sleep(5)
         res = api.namecard_operator(test_parameter['prefix'], self.user_header, 'get', self.mid,'')
         restext = json.loads(res.text)
         pprint(restext)
-        assert res.status_code == 404
+        assert res.status_code == 400

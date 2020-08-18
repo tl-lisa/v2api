@@ -139,6 +139,14 @@ def clearCache(hostAddr):
     ssh.exec_command(cmd)
     ssh.close()
 
+def setChatServer(hostAddr, cmd):
+    keyfile = '../assistence/lisakey'  
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.connect(hostAddr, username='lisa', key_filename=keyfile)
+    ssh.exec_command(cmd)
+    ssh.close()
+
 def execut_calculate_statistics(hostAddr):
     keyfile = '../assistence/lisakey'  
     ssh = paramiko.SSHClient()

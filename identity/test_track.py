@@ -8,6 +8,7 @@
     #重構所有相關api
     #新增可一次追蹤多名直播主(/v2/identity/multipleTrack) #977
 #milestone25 針對photo加入type區別圖檔或影音檔
+#milestone28 若已被封鎖的user再次追踪該直播主須回error #1818 (因應聲聊多直播主的設計)
 import json
 import requests
 import pymysql
@@ -45,13 +46,14 @@ def setup_module():
 def getTestData(testType):
     testData = []
     if testType == 'singleTrack':
-        # scenario, token, nonce, livemasterId, expected, totalCount
+        # scenario, token, nonce, livemasterId, expected, totalCount, isBlack
         testData = [
-            ('happyCase', 'user_token', 'user_nonce', 0 , 2, 1),
-            ('happyCase', 'user_token', 'user_nonce', 1, 2, 2),
-            ('happyCase', 'broadcaster_token', 'broadcaster_nonce', 1, 2, 1),
-            ('authNotFound', 'err_token', 'err_nonce', 1, 4, 0),
-            ('livemasterIdNotFound', 'user_token', 'user_nonce', 3, 4, 2)
+            ('happyCase', 'user_token', 'user_nonce', 0 , 2, 1, False),
+            ('直播主將該名user列入黑名單，user再追踪會失敗', 'user_token', 'user_nonce', 1, 4, 1, True),
+            ('直播主將該名user移出黑名單，user再追踪會成功', 'user_token', 'user_nonce', 1, 2, 2, False),
+            ('happyCase', 'broadcaster_token', 'broadcaster_nonce', 1, 2, 1, False),
+            ('authNotFound', 'err_token', 'err_nonce', 1, 4, 0, False),
+            ('livemasterIdNotFound', 'user_token', 'user_nonce', 3, 4, 2, False)
         ]
     elif testType == 'multipleTrack':
         #scenario, token, nonce, begin, end, expected, totalCount; Sam會判斷格式
@@ -86,7 +88,7 @@ def getTestData(testType):
             ('happy case', 'backend_token', 'backend_nonce', 3, 2, 3),
             ('authNotFound', 'err_token', 'err_nonce', 0, 4, 0),
             ('emptyId', 'user1_token', 'user1_nonce', -1, 4, 10),
-            ('IdNotFound', 'user1_token', 'user1_nonce', 0, 4, 3),
+            ('IdNotFound', 'user1_token', 'user1_nonce', 0, 2, 3),
         ]
     return testData
 
@@ -100,8 +102,12 @@ class TestTrack():
         res = api.apiFunction(test_parameter['prefix'], header, urlName, 'get', None)
         return res.status_code, json.loads(res.text)
 
-    @pytest.mark.parametrize("scenario, token, nonce, livemasterId, expected, totalCount", getTestData('singleTrack'))
-    def testSingleTrack(self, scenario, token, nonce, livemasterId, expected, totalCount):
+    @pytest.mark.parametrize("scenario, token, nonce, livemasterId, expected, totalCount, isBlack", getTestData('singleTrack'))
+    def testSingleTrack(self, scenario, token, nonce, livemasterId, expected, totalCount, isBlack):
+        if isBlack:
+            header['X-Auth-Token'] = test_parameter['broadcaster1_token']
+            header['X-Auth-Nonce'] = test_parameter['broadcaster1_nonce']  
+            api.blockUser(test_parameter['prefix'], test_parameter['broadcaster1_token'], test_parameter['broadcaster1_nonce'], idList[2])
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]  
         urlName = '/api/v2/identity/track'
@@ -113,6 +119,10 @@ class TestTrack():
             status, restext = self.checkDetail(header)
             assert status // 100 == 2
             assert restext['totalCount'] == totalCount
+        if isBlack:
+            header['X-Auth-Token'] = test_parameter['broadcaster1_token']
+            header['X-Auth-Nonce'] = test_parameter['broadcaster1_nonce']  
+            api.delete_block_user(test_parameter['prefix'], test_parameter['broadcaster1_token'], test_parameter['broadcaster1_nonce'], idList[2])
 
     @pytest.mark.parametrize("scenario, token, nonce, begin, end, expected, totalCount", getTestData('multipleTrack'))
     def testMultipleTrack(self, scenario, token, nonce, begin, end, expected, totalCount):
