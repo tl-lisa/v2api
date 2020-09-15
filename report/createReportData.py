@@ -2,7 +2,7 @@ import time
 import json
 from assistence import api
 from assistence import initdata
-from assistence import dbConnect
+from report import dbConnect
 from pprint import pprint
 from datetime import datetime, timedelta
 
@@ -71,13 +71,13 @@ def caculateTime(masterId, onAirList, dayDeff):
         elif resultDic[masterId][str(dayDeff)]['onAir']['active'] == 0:
             resultDic[masterId][str(dayDeff)]['onAir']['real'] += int((datetime.strptime(endDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s')) - int((datetime.strptime(begDatetime, "%Y-%m-%d %H:%M:%S")).strftime('%s'))
 
-def updateResult(db, masterId, userId, dayDeff, giftName, pointKind, point, createAt, category, gId):
+def updateResult(db, masterId, userId, dayDeff, giftName, pointKind, point, createAt, category, gId, gType):
     checkExist({'masterBody': masterId, 'userBody': userId}, dayDeff)
-    if pointKind != 'liveroomPoints':
-        res = dbConnect.dbQuery(db, "select max(id) from point_consumption_history")
-    mGiftDic = {'name': giftName, 'points': point, 'create_at': int((datetime.strptime(createAt, '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s')), 'uid': userId, 'giftId': gId, 'historyId': None}
+    res = dbConnect.execQuery(db, "select max(id) from point_consumption_history")
+    mGiftDic = {'name': giftName, 'points': point, 'create_at': int((datetime.strptime(createAt, '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s')), 
+                'uid': userId, 'giftId': gId, 'giftType': gType, 'historyId': res[0][0]}
     uGiftDic = {'name': giftName, 'points': point, 'create_at': int((datetime.strptime(createAt, '%Y-%m-%d %H:%M:%S') + timedelta(hours=8)).strftime('%s')), 
-                'liveMasterId': masterId, 'giftCategory': category, 'giftId': gId, 'historyId': res[0][0] if pointKind != 'liveroomPoints' else 0}
+                'liveMasterId': masterId, 'giftCategory': category, 'giftId': gId, 'giftType': gType, 'historyId': res[0][0]}
     resultDic[masterId][str(dayDeff)]['points']['points'] += point
     resultDic[masterId][str(dayDeff)]['points'][pointKind] += point
     resultDic[masterId][str(dayDeff)]['detail'].insert(0, mGiftDic)
@@ -104,7 +104,7 @@ def createLiveRoom(db, masterId, timeList, dayDeff):
         sqlStr += "create_at = '" + begDatetime + "', "
         sqlStr += "end_at = '" + endDatetime + "'"
         sqlList.append(sqlStr)
-    dbConnect.dbSetting(db, sqlList)
+    dbConnect.execSQL(db, sqlList)
     caculateTime(masterId, timeList, dayDeff)
 
 def createLiveShow(db, masterId, timeList, dayDeff):
@@ -125,7 +125,7 @@ def createLiveShow(db, masterId, timeList, dayDeff):
     sqlStr += "create_at = '" +  begDatetime + "', "
     sqlStr += "update_at = '" +  begDatetime  + "'"
     sqlList.append(sqlStr)
-    dbConnect.dbSetting(db, sqlList)
+    dbConnect.execSQL(db, sqlList)
 
 def createPhotoPost(db, masterId, dayDeff):
     dayStr = (datetime.today() - timedelta(days=dayDeff) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
@@ -137,7 +137,7 @@ def createPhotoPost(db, masterId, dayDeff):
     sqlStr += "owner_id = '"       + masterId + "', "
     sqlStr += "create_at = '"      + dayStr   + "', "
     sqlStr += "update_at = '"      + dayStr   + "'"
-    dbConnect.dbSetting(db, [sqlStr])
+    dbConnect.execSQL(db, [sqlStr])
 
 def createRemainPointHistory(db, userId, point, reason, dayDeff):
     dayStr = (datetime.today() - timedelta(days=dayDeff) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
@@ -150,7 +150,7 @@ def createRemainPointHistory(db, userId, point, reason, dayDeff):
     sqlStr += "reason = '"          + reason    + "', "
     sqlStr += "remain_points = 500," 
     sqlStr += "add_points = "       + str(0 - point) 
-    dbConnect.dbSetting(db, [sqlStr])
+    dbConnect.execSQL(db, [sqlStr])
 
 def addPointConsumptionHistory(db, gift_type, sender_id, receiver_id, point, dayDeff):
     dayStr = (datetime.today() - timedelta(days=dayDeff) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
@@ -160,16 +160,16 @@ def addPointConsumptionHistory(db, gift_type, sender_id, receiver_id, point, day
     sqlStr += "receiver_id = '" + receiver_id   + "', "
     sqlStr += "point = "        + str(point)    +  ", "
     sqlStr += "create_at = '"   + dayStr        + "'"
-    dbConnect.dbSetting(db, [sqlStr])
+    dbConnect.execSQL(db, [sqlStr])
 
 def createGameRoom(db):
     sqlStr = "select id, create_at from live_room order by id desc limit 1"
-    result = dbConnect.dbQuery(db, sqlStr)
+    result = dbConnect.execQuery(db, sqlStr)
     sqlStr  = "insert into game_room set game_category_id = 2, "
     sqlStr += "live_room_id = " + str(result[0][0]) + ", "
     sqlStr += "created_at = '"  + str(result[0][1]) + "', "
     sqlStr += "updated_at = '"  + str(result[0][1]) + "' "
-    dbConnect.dbSetting(db, [sqlStr])
+    dbConnect.execSQL(db, [sqlStr])
 
 def createIM(db, senderId, receiverId, dayDeff):
     dayStr = (datetime.today() - timedelta(days=dayDeff) - timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S')
@@ -179,11 +179,11 @@ def createIM(db, senderId, receiverId, dayDeff):
     sqlStr += "receiver_id = '" + receiverId    + "', "
     sqlStr += "sender_id = '"   + senderId      + "', "
     sqlStr += "create_at = '"   + dayStr        + "'"
-    dbConnect.dbSetting(db, [sqlStr])
+    dbConnect.execSQL(db, [sqlStr])
 
 def getNameAndPoint(db, condition):
     sqlStr = "select name, point, category_id from gift_v2 where " + condition
-    result = dbConnect.dbQuery(db, sqlStr)
+    result = dbConnect.execQuery(db, sqlStr)
     return result[0][0], result[0][1], result[0][2]
 
 def sendLiveShowGift(db, masterId, userId, timeStr, uuid, dayDeff): #liveshow禮物
@@ -200,14 +200,15 @@ def sendLiveShowGift(db, masterId, userId, timeStr, uuid, dayDeff): #liveshow禮
     sqlStr += "giver_user_id = '"   + userId        + "', "
     sqlStr += "live_master_id = '"  + masterId      + "', "
     sqlStr += "create_at = '"       + createAt       + "'"
-    dbConnect.dbSetting(db, [sqlStr])
-    updateResult(db, masterId, userId, dayDeff, giftName, 'liveshowPoints', giftPoint, createAt, str(category), uuid)
+    dbConnect.execSQL(db, [sqlStr])
+    updateResult(db, masterId, userId, dayDeff, giftName, 'liveshowPoints', giftPoint, createAt, str(category), uuid, 2)
 
 def sendLiveRoomGift(db, masterId, userId, timeStr, uuid, dayDeff): #直播間禮物，彈幕 目前尚未寫入PointConsumptionHistory
     sqlList = []
     giftName, giftPoint, category = getNameAndPoint(db, "uuid = '" + uuid + "'")
     dayStr = (datetime.today() - timedelta(days=dayDeff)).strftime('%Y-%m-%d')
     createAt = (datetime.strptime(dayStr + timeStr, '%Y-%m-%d %H:%M:%S')).strftime('%Y-%m-%d %H:%M:%S')
+    addPointConsumptionHistory(db, 'liveroom', userId, masterId, giftPoint, dayDeff)
     sqlStr  = "insert into live_room_gift set consumption_point = " + str(giftPoint) + ", "
     sqlStr += "room_id=(select max(id) from live_room), "
     sqlStr += "gift_id='"           + uuid          + "', "
@@ -215,9 +216,10 @@ def sendLiveRoomGift(db, masterId, userId, timeStr, uuid, dayDeff): #直播間�
     sqlStr += "target_user_id = '"  + masterId      + "', "
     sqlStr += "create_at = '"       + createAt       + "'"
     sqlList.append(sqlStr)
-    updateResult(db, masterId, userId, dayDeff, giftName, 'liveroomPoints', giftPoint, createAt, category, uuid)
+    updateResult(db, masterId, userId, dayDeff, giftName, 'liveroomPoints', giftPoint, createAt, category, uuid, 1)
     barragePoint = '35' if (dayDeff % 2) == 0 else '350'
     createAt = (datetime.strptime(dayStr + timeStr, '%Y-%m-%d %H:%M:%S') + timedelta(minutes=2)).strftime('%Y-%m-%d %H:%M:%S')
+    addPointConsumptionHistory(db, 'barrage', userId, masterId, barragePoint, dayDeff)
     sqlStr  = "insert into live_room_gift set "
     sqlStr += "consumption_point = " + barragePoint + ", "
     sqlStr += "room_id=(select max(id) from live_room), "
@@ -226,8 +228,8 @@ def sendLiveRoomGift(db, masterId, userId, timeStr, uuid, dayDeff): #直播間�
     sqlStr += "target_user_id = '"  + masterId      + "', "
     sqlStr += "create_at = '"       + createAt      + "'"
     sqlList.append(sqlStr)
-    dbConnect.dbSetting(db, sqlList)
-    updateResult(db, masterId, userId, dayDeff, '彈幕消費', 'liveroomPoints', int(barragePoint), createAt, None, '')
+    dbConnect.execSQL(db, sqlList)
+    updateResult(db, masterId, userId, dayDeff, '彈幕消費', 'liveroomPoints', int(barragePoint), createAt, None, '', 3)
 
 def joinGame(db, masterId, userId, timeStr, dayDeff):
     createGameRoom(db)
@@ -237,8 +239,8 @@ def joinGame(db, masterId, userId, timeStr, dayDeff):
     sqlStr += "id=(select max(id) from point_consumption_history), "
     sqlStr += "game_room_id=(select max(id) from game_room), "
     sqlStr += "room_id=(select max(id) from live_room) "
-    dbConnect.dbSetting(db, [sqlStr])
-    updateResult(db, masterId, userId, dayDeff, '遊戲消費', 'gamePoints', 500, createAt, None, '')
+    dbConnect.execSQL(db, [sqlStr])
+    updateResult(db, masterId, userId, dayDeff, '遊戲消費', 'gamePoints', 500, createAt, None, '', 7)
 
 def IMPoint(db, masterId, userId, dayDeff):
     createIM(db, userId, masterId, dayDeff)
@@ -247,8 +249,8 @@ def IMPoint(db, masterId, userId, dayDeff):
     sqlStr  = "insert into instant_message_point_history set "
     sqlStr += "id=(select max(id) from point_consumption_history), "
     sqlStr += "message_id=(select max(id) from instant_message) "
-    dbConnect.dbSetting(db, [sqlStr])
-    updateResult(db, masterId, userId, dayDeff, '私訊消費', 'imPoints', 20, createAt, None, '')
+    dbConnect.execSQL(db, [sqlStr])
+    updateResult(db, masterId, userId, dayDeff, '私訊消費', 'imPoints', 20, createAt, None, '', 4)
 
 def sendPostGift(db, masterId, userId, gid, dayDeff):
     createPhotoPost(db, masterId, dayDeff)
@@ -259,12 +261,12 @@ def sendPostGift(db, masterId, userId, gid, dayDeff):
     sqlStr += "id=(select max(id) from point_consumption_history), "
     sqlStr += "post_id=(select max(id) from photo_post), "
     sqlStr += "gift_id= " + str(gid)
-    dbConnect.dbSetting(db, [sqlStr])
-    updateResult(db, masterId, userId, dayDeff, giftName, 'postwallPoints', giftPoint, createAt, category, gid)
+    dbConnect.execSQL(db, [sqlStr])
+    updateResult(db, masterId, userId, dayDeff, giftName, 'postwallPoints', giftPoint, createAt, category, gid, 6)
 
 def clearData(db):
     sqlList = [] 
-    truncateList = ['post_gift_history', 'live_room_gift', 'liveshow_gift_history', 'game_point_history', 'instant_message_point_history', 
+    truncateList = ['post_gift_history', 'live_room_gift', 'liveshow_gift_history', 'game_point_history', 'instant_message_point_history', 'agency_master_contract',
                     'instant_message_text', 'photo_comment', 'photo_like', 'liveshow_guest', 'live_banner_v2', 'liveshow_streaming', 'live_master_statistics']
     deleteList = ['point_consumption_history', 'photo_post', 'game_room', 'instant_message', 'liveshow_team', 'liveshow', 'live_room']
     for i in truncateList:
@@ -272,7 +274,7 @@ def clearData(db):
     for tableName in deleteList:
         sqlList.append("delete from " + tableName)
         sqlList.append("alter table " + tableName + " auto_increment = 1")
-    dbConnect.dbSetting(db, sqlList)
+    dbConnect.execSQL(db, sqlList)
 
 def createData(dataDic):
     keys1 = dataDic.keys()

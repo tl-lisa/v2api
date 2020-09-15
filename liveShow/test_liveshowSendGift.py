@@ -1,4 +1,5 @@
 #milestone22 補入送禮者的經驗值；順便補入相關case
+#milestone30 新增count可同一禮物直接選取送多次 #1942
 import json
 import requests
 import pymysql
@@ -21,7 +22,8 @@ liveshowId = []
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
-    initdata.clearLiveshowData(test_parameter['db'])
+    initdata.clearConsumption(test_parameter['db'])
+    initdata.clearLiveData(test_parameter['db'])
     initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [test_parameter['broadcaster_acc'],
     test_parameter['user_acc'], test_parameter['user1_acc']], idList)
     liveshowLib.createMember(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], memberList)
@@ -30,19 +32,21 @@ def setup_module():
     liveshowLib.liveshowPrepare(test_parameter['prefix'], test_parameter['db'], header, 'TrueLove teams', 2, 0, 2, 3, 351, '', 
     False, False, memberList, liveshowId) 
 
-#scenario, token, nonce, idIndex, giftIdIndex, roomId, giver, target, team, expected (gift id = 1086 is for live_show)
+#scenario, token, nonce, idIndex, giftId, roomId, giver, target, team, isDelete, giftCount, expected (gift id = 1086 is for live_show)
 testData = [
-    ('happy case', 'user_token', 'user_nonce', 0, 0, 1, 1, 1, '1', True, 2),
-    ('happy case', 'user_token', 'user_nonce', 0, 0, 1, 1, 4, '2', False, 2),
-    ('user does not have point', 'user1_token', 'user1_nonce', 0, 0, 1, 2, 1, '1', False, 4),
-    ('liveShowId is wrong', 'user_token', 'user_nonce', 2, 0, 1, 1, 1, '1', False, 4),
-    ('target user is not exist', 'user_token', 'user_nonce', 0, 0, 1, 1, -1, '1', False, 2),
-    ('team is not exist', 'user_token', 'user_nonce', 0, 0, 1, 1, 4, '3', False, 4)
-]
+    ('正常送禮，禮物次數1', 'user_token', 'user_nonce', 0, 0, 1, 1, 1, '1', True, 2, 2),
+    ('正常送禮，禮物次數1', 'user_token', 'user_nonce', 0, 0, 1, 1, 4, '2', False, 1, 2),
+    ('正常送禮，禮物次數8, 點數不足', 'user_token', 'user_nonce', 0, 0, 1, 1, 4, '2', False, 8, 4),
+    ('正常送禮，禮物次數2', 'user_token', 'user_nonce', 0, 0, 1, 1, 4, '2', False, 2, 2),
+    ('使用者點數不足', 'user1_token', 'user1_nonce', 0, 0, 1, 2, 1, '1', False, 1, 4),
+    ('liveShowId錯誤', 'user_token', 'user_nonce', 2, 0, 1, 1, 1, '1', False, 1, 4),
+    ('收禮者不存在', 'user_token', 'user_nonce', 0, 0, 1, 1, -1, '1', False, 1, 2),
+    ('team不存在', 'user_token', 'user_nonce', 0, 0, 1, 1, 4, '3', False, 1, 4)
+]  
 
 class TestSend():
     remainPoints = 2000
-    giftPoine = 300
+    giftPoint = 300
     experience = 0
     byTeam = {}
     byGuest = {}
@@ -60,14 +64,13 @@ class TestSend():
             else:
                 sqlStr += "', '"
         result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
-        pprint(result)
+        #pprint(result)
         return result
 
-    @pytest.mark.parametrize('scenario, token, nonce, idIndex, giftId, roomId, giver, target, team, isDelete, expected', testData)         
-    def test_sendGift(self, scenario, token, nonce, idIndex, giftId, roomId, giver, target, team, isDelete, expected):
+    @pytest.mark.parametrize('scenario, token, nonce, idIndex, giftId, roomId, giver, target, team, isDelete, giftCount, expected', testData)         
+    def test_sendGift(self, scenario, token, nonce, idIndex, giftId, roomId, giver, target, team, isDelete, giftCount, expected):
         giftList = ['4700b45c-dc93-4807-a91f-b4c717e66f06', '04310750-994e-41d3-8b2c-62674df24db2']
-        if team not in self.byTeam:
-            self.byTeam[team] = 0
+        self.byTeam[team] = 0 if not self.byTeam.get(team) else self.byTeam[team]
         header['X-Auth-Token'] = test_parameter[token]
         header['X-Auth-Nonce'] = test_parameter[nonce]
         apiName = '/api/v2/liveshow/sendGift'
@@ -87,8 +90,7 @@ class TestSend():
             targetId = memberList[target]['id']
         else:
             targetId = 'jdoaiejraeh 999skjfp'
-        if targetId not in self.byTeam:
-            self.byGuest[targetId] = 0
+        self.byGuest[targetId] = 0 if not self.byGuest.get(targetId) else self.byGuest[targetId]
         bfExperience = self.getExperience([targetId, idList[giver]])
         body = {
             'liveshowId': liveId,
@@ -96,26 +98,28 @@ class TestSend():
             'roomId': rId,
             'giveUserId': idList[giver],
             'targetUserId': targetId,
-            'teamId': team
+            'teamId': team,
+            'count': giftCount
         }
         res = api.apiFunction(test_parameter['prefix'], header, apiName, 'post', body)
         assert res.status_code // 100 == expected
         if expected == 2:
+            pprint(self.byGuest)
             afExperience = self.getExperience([targetId, idList[giver]])
             restext = json.loads(res.text)
-            restext['remainPoints'] == self.remainPoints - self.giftPoine
-            self.byTeam[team] = self.byTeam[team] + self.giftPoine
-            self.byGuest[targetId] = self.byGuest[targetId] + self.giftPoine
             for i in range(2):
                 if bfExperience[i][0] == targetId:
-                    assert afExperience[i][1] - bfExperience[i][1] == self.giftPoine
+                    assert afExperience[i][1] - bfExperience[i][1] == self.giftPoint * giftCount
                 else:
-                    assert afExperience[i][1] - bfExperience[i][1] == self.giftPoine * 3
+                    assert afExperience[i][1] - bfExperience[i][1] == self.giftPoint * 3 * giftCount
+            restext['remainPoints'] == self.remainPoints - self.giftPoint * giftCount
+            self.byTeam[team] = self.byTeam[team] + self.giftPoint * giftCount
+            self.byGuest[targetId] = self.byGuest[targetId] + self.giftPoint * giftCount
             assert restext['points']['byTeam'][team] == self.byTeam[team]
             assert restext['points']['byGuest'][targetId] == self.byGuest[targetId]
-        if isDelete:
+        if isDelete: #送禮後不能刪除資料
             header['X-Auth-Token'] = test_parameter['backend_token']
             header['X-Auth-Nonce'] = test_parameter['backend_nonce']
-            apiName = '/api/v2/backend/liveshow/establish/' + str(liveshowId[0])
+            apiName = '/api/v2/backend/liveshow/' + str(liveshowId[0])
             res = api.apiFunction(test_parameter['prefix'], header, apiName, 'delete', None)
-            assert res.status_code // 100 == 4
+            assert res.status_code // 100 == 4 

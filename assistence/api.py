@@ -91,17 +91,6 @@ def add_point(prefix, id, header):
     return
 
 
-def change_roles(prefix, header, bid, rtype):
-    #5:一般用戶；4:直播主
-    url = prefix + '/api/v2/backend/user/role'
-    body = {'ids': bid, 'role': rtype}
-    res = requests.patch(url, headers=header, json=body)
-    if res.status_code != 200:
-        print(json.loads(res.text))
-    #print(res.status_code)
-    return(res)
-
-
 def set_bank(prefix, bid, header):
     url = prefix + '/api/v1/identity/' + bid + '/account'
     body = {'accountNo': '0', 'bankName': '0', 'branchBank': '0', 'branchNo': '0'}

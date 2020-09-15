@@ -9,6 +9,7 @@
     #新增可一次追蹤多名直播主(/v2/identity/multipleTrack) #977
 #milestone25 針對photo加入type區別圖檔或影音檔
 #milestone28 若已被封鎖的user再次追踪該直播主須回error #1818 (因應聲聊多直播主的設計)
+#milestone30 修正使用者追蹤清單排序方式，由最新追蹤到最舊 #1879
 import json
 import requests
 import pymysql
@@ -41,6 +42,7 @@ def setup_module():
     header['X-Auth-Nonce'] = test_parameter['backend_nonce']  
     for i in range(10):
         liveMasterList.append(api.search_user(test_parameter['prefix'], 'broadcaster01' + str(i), header))
+    api.changeRole(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], liveMasterList, 4)
     liveMasterList.append('')
 
 def getTestData(testType):
@@ -62,7 +64,7 @@ def getTestData(testType):
             ('tl-lisa追蹤liveMasterList中的4位直播主', 'backend_token', 'backend_nonce', 3, 7, 2, 4),
             ('token/nonce不存在', 'err_token', 'err_nonce', 1, 5, 4, 0),
             ('帶入空的list', 'user1_token', 'user1_nonce', 1, 1, 2, 3),
-            ('帶入字串而非list,應可會追蹤成功', 'user1_token', 'user1_nonce', 1, 0, 2, 4)
+            ('帶入字串而非list,會回成功，但實際不會追蹤成功', 'user1_token', 'user1_nonce', 1, 0, 2, 3)
         ]
     elif testType == 'getTrackList':
         #scenario, action, token, nonce, expected, totalCount, begin, end, condition, items
@@ -168,9 +170,11 @@ def testInit():
     api.changeRole(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [idList[0], idList[1]], 4)
     header['X-Auth-Token'] = test_parameter['user_token']
     header['X-Auth-Nonce'] = test_parameter['user_nonce']  
-    urlName = '/api/v2/identity/multipleTrack'
-    body = {"data": [idList[0], idList[1]]}
-    api.apiFunction(test_parameter['prefix'], header, urlName, 'post', body)
+    urlName = '/api/v2/identity/track'
+    for i in range(2):
+        body = {"liveMasterId": idList[i]}
+        api.apiFunction(test_parameter['prefix'], header, urlName, 'post', body)
+        time.sleep(1.5)
     array1 = ['broadcaster_token', 'broadcaster_nonce', 'broadcaster1_token', 'broadcaster1_nonce']  
     for i in range(2):
         for j in range(2):
@@ -203,10 +207,7 @@ def Openroom(token, nonce, chat):
 class TestGetList():
     chat =[]
     def setup_class(self):
-        changelist = [idList[0]] 
-        header['X-Auth-Token'] = test_parameter['backend_token']
-        header['X-Auth-Nonce'] = test_parameter['backend_nonce'] 
-        api.change_roles(test_parameter['prefix'], header, changelist, '4') #轉回直播主
+        api.changeRole(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [idList[0]] , 4)
         header['X-Auth-Token'] = test_parameter['broadcaster1_token']
         header['X-Auth-Nonce'] = test_parameter['broadcaster1_nonce'] 
         api.apiFunction(test_parameter['prefix'], header, '/api/v2/liveMaster/blockUser/' + idList[2] , 'delete', None) #清除黑名單
@@ -237,6 +238,8 @@ class TestGetList():
         assert res.status_code // 100 == expected
         assert restext['totalCount'] == totalCount
         assert len(restext['data']) <= items
+        if all([expected == 2, action == '']):
+            assert restext['data'][0]['id'] == idList[1]
         for i in restext['data']:
             if action == 'onAir':
                 assert i['onAir'] == True

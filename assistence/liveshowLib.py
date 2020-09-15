@@ -67,7 +67,7 @@ def establish(prefix, db, header, title, liveshowType, poolId, teams_num, mumber
     #pprint(body)
     apiName = '/api/v2/backend/liveshow/establish'
     api.apiFunction(prefix, header, apiName, 'post', body)
-    sqlStr = 'select max(id) from liveshow'
+    sqlStr = 'select id from liveshow where id = (select max(id) from liveshow)'
     result = dbConnect.dbQuery(db, sqlStr)
     liveshowId.append(result[0][0])
     return body
