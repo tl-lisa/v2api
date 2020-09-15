@@ -28,6 +28,7 @@ def initVerifyData():
     body['nickname'] = '123321'
     body['sex'] = 0
     body['realName'] = '竹本呆'
+    api.apiFunction(test_parameter['prefix'], header, apiName + idList[4], 'post', body)
     original['account'] = {
         'accountNo': '',
         'bankName': '',
@@ -45,7 +46,8 @@ def initVerifyData():
     original['sexValue'] = 0
     original['realName'] = '竹本呆'
     original['loginId'] = 'liveAcc0004'
-    original['trueLoveId'] = 'GNMRWKD5'
+    # original['trueLoveId'] = initdata.getTrueLoveId(21105)
+    # print('original trueloveid = ',original['trueLoveId'])
     original['email'] = '123@gmail.com'
     original['3rdPartySource'] = ''
     original['fansCount'] = 1
@@ -55,7 +57,6 @@ def initVerifyData():
         "levelId": "bronze",
         "levelNum": 1
     }
-    api.apiFunction(test_parameter['prefix'], header, apiName + idList[4], 'post', body)
 
 def liveAcc0004Login():
     body = {
@@ -65,12 +66,18 @@ def liveAcc0004Login():
         }
     res = api.apiFunction(test_parameter['prefix'], {'Content-Type': 'application/json', 'Connection': 'Keep-alive'}, 
         '/api/v2/identity/auth/login', 'post', body)
+    sqlList = ["delete from identity_profile where identity_id = '0610edb2-2c38-4089-b664-c54d8e3ec0b4'"]
     sqlStr  = "insert into identity_profile set identity_id = '0610edb2-2c38-4089-b664-c54d8e3ec0b4', "
     sqlStr += "email = '123@gmail.com', created_at = '2020-08-12 08:54:27', updated_at = '2020-08-12 08:54:27'"
-    dbConnect.dbSetting(test_parameter['db'], [sqlStr])
+    sqlList.append(sqlStr)
+    dbConnect.dbSetting(test_parameter['db'], sqlList)
     return res
 
 def createAccountByEmail():
+    sqlStr = "select id from identity where login_id = 'lisa@truelovelive.dev'" 
+    result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+    sqlStr = "update identity set login_id = '" + str(int(time.time())) + "' where id = '" + result[0] + "'"
+    dbConnect.dbSetting(test_parameter['db'], [sqlStr])
     head = {'Content-Type': 'application/json'}
     url = '/api/v2/identity/register/email/send'
     body = {
@@ -110,6 +117,7 @@ def loginByLine():
 
 def setup_module():
     initdata.set_test_data(env, test_parameter)
+    initdata.clearConsumption(test_parameter['db'])
     initdata.clearIdentityData(test_parameter['db'])
     initdata.clearFansInfo(test_parameter['db'])
     initdata.initIdList(test_parameter['prefix'], test_parameter['backend_token'], test_parameter['backend_nonce'], [test_parameter['broadcaster_acc'],
@@ -128,7 +136,7 @@ def setup_module():
 
 def teardown_module():
     initVerifyData()
-    dbConnect.dbSetting(test_parameter['db'], ["delete from identity_profile where identity_id = '0610edb2-2c38-4089-b664-c54d8e3ec0b4'"])
+    #dbConnect.dbSetting(test_parameter['db'], ["delete from identity_profile where identity_id = '0610edb2-2c38-4089-b664-c54d8e3ec0b4'"])
 
 @pytest.fixture(scope="function")
 def resetData():
@@ -154,6 +162,7 @@ def getTestData(testType):
             ('查詢身份別為直播主', 'backend_token', 'backend_nonce', 4, '', '', 'ROLE_MASTER', 2),
             ('查詢原舊帳號為user', 'backend_token', 'backend_nonce', 2, '', '', 'ROLE_USER', 2),
             ('查詢email登入且為user', 'backend_token', 'backend_nonce', 5, 'email', 'lisa@truelovelive.dev', 'ROLE_USER', 2),
+            ('查詢trueloveID且為user', 'backend_token', 'backend_nonce', 5, 'trueLoveId', '', 'ROLE_USER', 2),
             ('查詢line登入且為user', 'backend_token', 'backend_nonce', 6, '3rdPartySource', 'Line', 'ROLE_USER', 2),
             ('一般user登入無權限', 'user_token', 'user_nonce', 4, '', '', 'ROLE_USER', 4)
         ]
@@ -217,10 +226,18 @@ class TestUserInfo():
         if expect == 2:
             restext = json.loads(res.text)
             #assert restext['roles'][0]['name'] == roleType
+            sqlStr = "select truelove_id from identity where id = '" + idList[idIndex] + "'"
+            result = dbConnect.dbQuery(test_parameter['db'], sqlStr)
+            expectID = initdata.getTrueLoveId(result[0][0])
+            print('trueloveId = %d; api trueloveId: %s, my hash Id: %s '%(result[0][0], restext['trueLoveId'], expectID))
             assert len(restext['profilePicture']) > 0
-            assert restext.get('trueLoveId')
+            assert restext['id'] == idList[idIndex]
+            assert restext['trueLoveId'] == expectID
             if compareKey != '':
-                assert restext[compareKey] == compareValue
+                if compareKey != 'trueLoveId':
+                    assert restext[compareKey] == compareValue 
+                else: 
+                    assert restext['trueLoveId'] == expectID
                 assert restext['userLevel']['levelId'] == 'bronze'
                 assert restext['userLevel']['levelNum'] == 1
         

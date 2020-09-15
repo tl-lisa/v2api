@@ -1,6 +1,7 @@
 #/api/v2/identity/gift/list?giftCategoryId=
 #mileston 18 加入軟刪及判斷delete_at,並且使用V2 table, 點數由小到大排序
 #milestone25 #1445 加入二個參數isMultiple：是否為連擊禮物；multiples：如果是可以連發的禮物，每點一次時變動的數量級距
+#milestone30 #1944 依照禮物點數由小到大排序
 import json
 import requests
 import pymysql
@@ -68,7 +69,7 @@ class TestGetGiftCategory():
             sqlStr += "on g.category_id = c.id and c.id =  " + str(categoryId) + " "
             sqlStr += "and c.deleted_at is Null and ((c.start_time <= '" + TimeCondition1 + "' or c.start_time is null) "
             sqlStr += "and (c.end_time >= '" + TimeCondition2 + "' or c.end_time is null)) "
-            sqlStr += "where g.is_active = 1 and g.deleted_at is Null order by g.id"
+            sqlStr += "where g.is_active = 1 and g.deleted_at is Null order by g.point"
             dbResult = dbConnect.dbQuery(test_parameter['db'], sqlStr)
             assert restext['totalCount'] == len(dbResult)
             if restext['totalCount'] > 0:
@@ -86,3 +87,5 @@ class TestGetGiftCategory():
                         assert restext['data'][i]['multiples'] == [1, 20, 520, 999]
                     else:
                         assert restext['data'][i]['multiples'] == [1, 2, 4, 6, 8]
+                    if i > 0:
+                        assert restext['data'][i-1]['point'] <= restext['data'][i]['point']
